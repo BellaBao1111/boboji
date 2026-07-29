@@ -226,12 +226,14 @@ export class Env {
     this.scene.add(grp);
     this.cupCenter.y = cupH - 0.1;
 
-    // 收集的光签（实例化）
+    // 收集的光签（实例化，白底材质 + 实例色 = 保留每根签自己的颜色）
     const stickGeom = new THREE.CylinderGeometry(0.026, 0.03, 1.9, 6);
-    const stickMat = new THREE.MeshStandardMaterial({ color: '#d9b473', roughness: 0.6 });
+    const stickMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.55 });
     this.cupSticks = new THREE.InstancedMesh(stickGeom, stickMat, 64);
     this.cupSticks.count = 0;
     this.cupSticks.castShadow = true;
+    const bamboo0 = new THREE.Color('#d9b473');
+    for (let i = 0; i < 64; i++) this.cupSticks.setColorAt(i, bamboo0);
     this.scene.add(this.cupSticks);
 
     // 预生成插签姿态
@@ -323,9 +325,13 @@ export class Env {
   }
 
   /** 把第 i 根光签实际放进签筒 */
-  cupPlace(i: number) {
+  cupPlace(i: number, color?: THREE.Color) {
     const idx = Math.min(i, 63);
     this.cupSticks.setMatrixAt(idx, this.cupSlotTransforms[idx % this.cupSlotTransforms.length]);
+    if (color) {
+      this.cupSticks.setColorAt(idx, color);
+      if (this.cupSticks.instanceColor) this.cupSticks.instanceColor.needsUpdate = true;
+    }
     this.cupFill = Math.max(this.cupFill, idx + 1);
     this.cupSticks.count = Math.min(this.cupFill, 64);
     this.cupSticks.instanceMatrix.needsUpdate = true;

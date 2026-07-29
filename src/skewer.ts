@@ -65,6 +65,7 @@ export class Skewer {
   spawned = false;
   splashed = false;
   hovered = false;
+  stickColor: THREE.Color;
 
   private mats: MatRec[] = [];
   private outlineMat = OUTLINE_BASE.clone();
@@ -85,6 +86,9 @@ export class Skewer {
     this.len = SKEWER.minLen + rnd() * (SKEWER.maxLen - SKEWER.minLen);
 
     // 竹签本体
+    this.stickColor = golden
+      ? new THREE.Color('#f7c649')
+      : new THREE.Color(STICK_COLORS[type.id] ?? '#d8b06c').offsetHSL(0, 0, (rnd() - 0.5) * 0.05);
     const stickMat = golden
       ? new THREE.MeshPhysicalMaterial({
           color: '#f7c649',
@@ -95,8 +99,8 @@ export class Skewer {
           emissiveIntensity: 0.32,
         })
       : new THREE.MeshStandardMaterial({
-          color: new THREE.Color('#d8b06c').offsetHSL(0, 0, (rnd() - 0.5) * 0.07),
-          roughness: 0.62,
+          color: this.stickColor,
+          roughness: 0.52,
           metalness: 0,
         });
     const stick = new THREE.Mesh(stickGeometry(this.len), stickMat);
@@ -237,6 +241,18 @@ export class Skewer {
 
 const HINT_COLOR = new THREE.Color('#ffd23f');
 const HOVER_COLOR = new THREE.Color('#ff8c2e');
+
+// 签子按食材配色（串串店传统：不同颜色签子区分菜品），都选了在红汤/木桌上显眼的色
+const STICK_COLORS: Record<string, string> = {
+  egg: '#5b9bd5', // 天蓝配白蛋
+  lotus: '#a06cd5', // 紫罗兰配藕片
+  kelp: '#d8b06c', // 原竹色配绿海带
+  gizzard: '#3aa88f', // 青绿配红郡肝
+  carrot: '#6db33f', // 草绿配橙胡萝卜（像带缨子）
+  tofu: '#d4568a', // 玫红配金豆皮
+  broccoli: '#ece0c4', // 米白配绿西兰花
+  beef: '#e6c33c', // 亮黄配红牛肉
+};
 
 // 描边高亮：沿法线膨胀的背面壳，任何底色的食材上都清晰可见（白色食材靠自发光看不出来）
 const OUTLINE_BASE = new THREE.ShaderMaterial({

@@ -472,7 +472,7 @@ export class Game {
         g.quaternion.slerpQuaternions(pa.startQuat, pa.cupQuat, k);
         g.scale.setScalar(1.14 - 0.14 * k);
         if (pa.t >= D_DUR) {
-          this.env.cupPlace(pa.slot);
+          this.env.cupPlace(pa.slot, pa.sk.stickColor);
           sfx.stickDrop();
           this.env.scene.remove(g);
           pa.sk.removed = true;
