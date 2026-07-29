@@ -14,14 +14,14 @@ import { mulberry32 } from './textures';
 type State = 'home' | 'levels' | 'intro' | 'play' | 'pause' | 'result';
 
 const FOOD_CRUMB: Record<string, string> = {
-  egg: '#f7ecd8',
-  lotus: '#f2e3ce',
-  kelp: '#2e5c33',
-  gizzard: '#6d2f2b',
-  potato: '#ecd9a0',
-  tofu: '#e8cb92',
-  cauli: '#f2ead0',
-  beef: '#7c3128',
+  egg: '#f5e8cf',
+  lotus: '#efdcbc',
+  kelp: '#377e3f',
+  gizzard: '#7a2f28',
+  carrot: '#e8731f',
+  tofu: '#dfa94b',
+  broccoli: '#3a7028',
+  beef: '#8a3524',
   golden: '#f0b93c',
 };
 
@@ -343,7 +343,8 @@ export class Game {
     this.env.shake(0.14);
     this.ui.setScore(this.score);
 
-    // 物理移除 + 开始拔签动画
+    // 物理移除 + 开始拔签动画（先清掉描边/高亮，别跟着飞）
+    sk.clearFx();
     this.phys.beginPull(sk);
     this.startPullAnim(sk);
     this.ui.setCount(this.remainingCount());
@@ -361,7 +362,7 @@ export class Game {
     this.timeLeft = Math.max(0, this.timeLeft - RULES.blockPenalty);
     sfx.blocked();
     this.ui.hurtTimer();
-    sk.flash('#ffffff', 0.22);
+    sk.flash('#ffab4a', 0.25);
     for (const b of blockers) b.flash('#ff4530', 0.75);
     this.phys.nudge(sk);
     this.env.shake(0.4);

@@ -28,20 +28,21 @@ export interface FoodType {
 // ---------- 材质（红油挂汁质感，共享实例） ----------
 const OIL = new THREE.Color('#b8441f');
 
-function oiled(hex: string, opt: { rough?: number; oil?: number; metal?: number; flat?: boolean } = {}) {
+function oiled(hex: string, opt: { rough?: number; oil?: number; metal?: number; flat?: boolean; coat?: number } = {}) {
   const color = new THREE.Color(hex).lerp(OIL, opt.oil ?? 0.16);
   return new THREE.MeshPhysicalMaterial({
     color,
     roughness: opt.rough ?? 0.42,
     metalness: opt.metal ?? 0.02,
-    clearcoat: 0.85,
+    clearcoat: opt.coat ?? 0.85,
     clearcoatRoughness: 0.28,
     flatShading: opt.flat ?? false,
   });
 }
 
+// 配色原则：浅色食材降低清漆反光（白上白晃眼），并混入更多彩色食材
 const MAT = {
-  egg: oiled('#f7ecd8', { rough: 0.34, oil: 0.1 }),
+  egg: oiled('#f5e8cf', { rough: 0.42, oil: 0.08, coat: 0.45 }),
   eggGold: new THREE.MeshPhysicalMaterial({
     color: '#f0b93c',
     roughness: 0.22,
@@ -51,14 +52,14 @@ const MAT = {
     emissive: '#7a4a00',
     emissiveIntensity: 0.25,
   }),
-  lotus: oiled('#f2e3ce', { rough: 0.5, oil: 0.14 }),
-  kelp: oiled('#2e5c33', { rough: 0.3, oil: 0.1 }),
-  gizzard: oiled('#6d2f2b', { rough: 0.38, oil: 0.24 }),
-  potato: oiled('#ecd9a0', { rough: 0.48, oil: 0.16 }),
-  tofu: oiled('#e8cb92', { rough: 0.52, oil: 0.14 }),
-  cauli: oiled('#f2ead0', { rough: 0.6, oil: 0.12, flat: true }),
-  cauliStem: oiled('#cfe0a8', { rough: 0.55, oil: 0.08 }),
-  beef: oiled('#7c3128', { rough: 0.4, oil: 0.26 }),
+  lotus: oiled('#efdcbc', { rough: 0.52, oil: 0.14, coat: 0.5 }),
+  kelp: oiled('#377e3f', { rough: 0.3, oil: 0.1 }),
+  gizzard: oiled('#7a2f28', { rough: 0.38, oil: 0.24 }),
+  carrot: oiled('#e8731f', { rough: 0.45, oil: 0.1 }),
+  tofu: oiled('#dfa94b', { rough: 0.5, oil: 0.15 }),
+  broccoli: oiled('#3a7028', { rough: 0.55, oil: 0.1, flat: true }),
+  broccoliStem: oiled('#7fae4f', { rough: 0.55, oil: 0.08 }),
+  beef: oiled('#8a3524', { rough: 0.4, oil: 0.26 }),
 };
 
 // ---------- 几何工具 ----------
@@ -138,9 +139,9 @@ const kelpGeom = new THREE.TorusKnotGeometry(0.105, 0.042, 72, 10, 2, 3);
 // 郡肝
 const gizzardGeoms = [0, 1, 2].map((i) => lumpy(new THREE.IcosahedronGeometry(0.145, 2), 0.024, i * 13 + 3, 1.4));
 
-// 土豆片
-const potatoGeom = (() => {
-  const g = new THREE.CylinderGeometry(0.195, 0.185, 0.05, 22);
+// 胡萝卜片
+const carrotGeom = (() => {
+  const g = new THREE.CylinderGeometry(0.185, 0.175, 0.05, 22);
   return lumpy(g, 0.006, 5, 2);
 })();
 
@@ -162,20 +163,23 @@ const tofuGeom = (() => {
   return g;
 })();
 
-// 花菜
-function makeCauli(rnd: () => number): THREE.Group {
+// 西兰花
+function makeBroccoli(rnd: () => number): THREE.Group {
   const grp = new THREE.Group();
   const n = 6;
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + rnd() * 0.5;
     const rr = 0.075 + rnd() * 0.035;
-    const m = mesh(lumpy(new THREE.IcosahedronGeometry(rr, 1), 0.016, i * 3 + rnd() * 40, 2), MAT.cauli);
+    const m = mesh(lumpy(new THREE.IcosahedronGeometry(rr, 1), 0.016, i * 3 + rnd() * 40, 2), MAT.broccoli);
     m.position.set(Math.cos(a) * 0.085, (rnd() - 0.5) * 0.1, Math.sin(a) * 0.085);
     grp.add(m);
   }
-  const top = mesh(lumpy(new THREE.IcosahedronGeometry(0.085, 1), 0.016, rnd() * 90, 2), MAT.cauli);
+  const top = mesh(lumpy(new THREE.IcosahedronGeometry(0.085, 1), 0.016, rnd() * 90, 2), MAT.broccoli);
   top.position.y = 0.075;
   grp.add(top);
+  const stem = mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.16, 10), MAT.broccoliStem);
+  stem.position.y = -0.1;
+  grp.add(stem);
   return grp;
 }
 
@@ -227,13 +231,13 @@ export const FOOD_TYPES: FoodType[] = [
     },
   },
   {
-    id: 'potato',
-    name: '土豆片',
+    id: 'carrot',
+    name: '胡萝卜',
     count: [3, 3],
     make(rnd) {
-      const o = mesh(potatoGeom, MAT.potato);
+      const o = mesh(carrotGeom, MAT.carrot);
       o.scale.setScalar(0.95 + rnd() * 0.12);
-      return { object: o, span: 0.16, colliders: [{ kind: 'cylinder', args: [0.038, 0.21] }] };
+      return { object: o, span: 0.16, colliders: [{ kind: 'cylinder', args: [0.038, 0.2] }] };
     },
   },
   {
@@ -248,12 +252,12 @@ export const FOOD_TYPES: FoodType[] = [
     },
   },
   {
-    id: 'cauli',
-    name: '花菜',
+    id: 'broccoli',
+    name: '西兰花',
     count: [2, 2],
     make(rnd) {
-      const o = makeCauli(rnd);
-      return { object: o, span: 0.42, colliders: [{ kind: 'ball', args: [0.19] }] };
+      const o = makeBroccoli(rnd);
+      return { object: o, span: 0.44, colliders: [{ kind: 'ball', args: [0.19] }] };
     },
   },
   {

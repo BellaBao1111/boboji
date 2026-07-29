@@ -67,6 +67,9 @@ export class Skewer {
   hovered = false;
 
   private mats: MatRec[] = [];
+  private outlineMat = OUTLINE_BASE.clone();
+  private outlineMeshes: THREE.Mesh[] = [];
+  private outlineOn = false;
   private flashT = 0;
   private flashDur = 0;
   private flashColor = new THREE.Color();
@@ -147,6 +150,17 @@ export class Skewer {
 
     for (const m of this.pickMeshes) m.userData.skewerId = id;
     this.group.userData.skewerId = id;
+
+    // 描边壳（共享几何体，默认隐藏）
+    for (const m of this.pickMeshes) {
+      const o = new THREE.Mesh(m.geometry, this.outlineMat);
+      o.position.copy(m.position);
+      o.quaternion.copy(m.quaternion);
+      o.scale.copy(m.scale);
+      o.visible = false;
+      m.parent!.add(o);
+      this.outlineMeshes.push(o);
+    }
   }
 
   /** 点击反馈闪烁 */
@@ -179,16 +193,33 @@ export class Skewer {
         r.mat.emissive.copy(r.e0).lerp(color, Math.min(1, e));
         r.mat.emissiveIntensity = r.i0 + e;
       }
+      (this.outlineMat.uniforms.uColor.value as THREE.Color).copy(color);
+      this.outlineMat.uniforms.uOpacity.value = 0.35 + 0.65 * Math.min(1, e);
+      if (!this.outlineOn) {
+        for (const o of this.outlineMeshes) o.visible = true;
+        this.outlineOn = true;
+      }
       this.fxDirty = true;
     } else if (this.fxDirty) {
-      for (const r of this.mats) {
-        r.mat.emissive.copy(r.e0);
-        r.mat.emissiveIntensity = r.i0;
-      }
-      this.fxDirty = false;
+      this.clearFx();
     }
   }
   private fxDirty = false;
+
+  /** 立即清掉所有高亮（拔签动画开始前调用，避免描边跟着飞） */
+  clearFx() {
+    for (const r of this.mats) {
+      r.mat.emissive.copy(r.e0);
+      r.mat.emissiveIntensity = r.i0;
+    }
+    if (this.outlineOn) {
+      for (const o of this.outlineMeshes) o.visible = false;
+      this.outlineOn = false;
+    }
+    this.flashT = 0;
+    this.hovered = false;
+    this.fxDirty = false;
+  }
 
   syncFromBody() {
     if (!this.body) return;
@@ -200,11 +231,38 @@ export class Skewer {
 
   dispose() {
     for (const r of this.mats) r.mat.dispose();
+    this.outlineMat.dispose();
   }
 }
 
-const HINT_COLOR = new THREE.Color('#ffcf5e');
-const HOVER_COLOR = new THREE.Color('#ffe3b4');
+const HINT_COLOR = new THREE.Color('#ffd23f');
+const HOVER_COLOR = new THREE.Color('#ff8c2e');
+
+// 描边高亮：沿法线膨胀的背面壳，任何底色的食材上都清晰可见（白色食材靠自发光看不出来）
+const OUTLINE_BASE = new THREE.ShaderMaterial({
+  uniforms: {
+    uColor: { value: new THREE.Color('#ff8c2e') },
+    uOpacity: { value: 1 },
+    uWidth: { value: 0.026 },
+  },
+  vertexShader: /* glsl */ `
+    uniform float uWidth;
+    void main() {
+      vec3 p = position + normal * uWidth;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    }`,
+  fragmentShader: /* glsl */ `
+    uniform vec3 uColor;
+    uniform float uOpacity;
+    void main() {
+      gl_FragColor = vec4(uColor, uOpacity);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`,
+  side: THREE.BackSide,
+  transparent: true,
+  depthWrite: false,
+});
 
 function rec(mat: THREE.MeshPhysicalMaterial | THREE.MeshStandardMaterial): MatRec {
   return { mat, e0: mat.emissive.clone(), i0: mat.emissiveIntensity };
