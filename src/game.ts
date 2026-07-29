@@ -93,11 +93,11 @@ export class Game {
 
   private raycaster = new THREE.Raycaster();
   private ndc = new THREE.Vector2();
-  private downPos: { x: number; y: number; t: number } | null = null;
   private rnd = mulberry32((Math.random() * 1e9) | 0);
   private hoverSk: Skewer | null = null;
   private ptr = { x: 0, y: 0, over: false, dirty: false };
   private hoverT = 0;
+  private gesture: { x: number; y: number; maxD2: number; multi: boolean } | null = null;
 
   constructor(env: Env, phys: Physics, uiRoot: HTMLElement) {
     this.env = env;
@@ -179,11 +179,17 @@ export class Game {
   // ---------- 输入 ----------
   private bindPointer() {
     const dom = this.env.renderer.domElement;
+    dom.addEventListener('contextmenu', (e) => e.preventDefault()); // 长按瞄准时不弹系统菜单
     const track = (e: PointerEvent) => {
       this.ptr.x = e.clientX;
       this.ptr.y = e.clientY;
       this.ptr.over = true;
       this.ptr.dirty = true;
+      if (this.gesture) {
+        const dx = e.clientX - this.gesture.x;
+        const dy = e.clientY - this.gesture.y;
+        this.gesture.maxD2 = Math.max(this.gesture.maxD2, dx * dx + dy * dy);
+      }
     };
     dom.addEventListener('pointermove', track);
     dom.addEventListener('pointerleave', () => {
@@ -192,18 +198,30 @@ export class Game {
     });
     dom.addEventListener('pointerdown', (e) => {
       sfx.unlock();
-      track(e); // 手机端：手指按下立即高亮瞄准的签
-      this.downPos = { x: e.clientX, y: e.clientY, t: performance.now() };
+      if (this.gesture) {
+        this.gesture.multi = true; // 第二根手指（捏合缩放），本次手势不算拔签
+      } else {
+        this.gesture = { x: e.clientX, y: e.clientY, maxD2: 0, multi: false };
+      }
+      track(e); // 手机端：手指按下立即高亮瞄准的签，按住可微调，松手才拔
     });
     dom.addEventListener('pointerup', (e) => {
-      if (!this.downPos) return;
-      const dx = e.clientX - this.downPos.x;
-      const dy = e.clientY - this.downPos.y;
-      const dt = performance.now() - this.downPos.t;
-      this.downPos = null;
-      if (dx * dx + dy * dy > 90 || dt > 420) return; // 拖动视角，不算点击
+      const g = this.gesture;
+      this.gesture = null;
+      // 触屏松手后没有悬停概念，清掉瞄准光
+      if (e.pointerType === 'touch') {
+        this.ptr.over = false;
+        this.ptr.dirty = true;
+      }
+      if (!g || g.multi) return;
+      if (g.maxD2 > 140) return; // 全程拖动超过 ~12px 是转视角，不算拔
       if (this.state !== 'play') return;
       this.clickAt(e.clientX, e.clientY);
+    });
+    dom.addEventListener('pointercancel', () => {
+      this.gesture = null;
+      this.ptr.over = false;
+      this.ptr.dirty = true;
     });
   }
 

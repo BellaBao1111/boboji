@@ -112,7 +112,7 @@ export class UI {
           <div class="help-row"><div class="ico">🍢</div><div class="t"><b>只能拔没被压住的签</b><span>签签在红汤里层层叠叠，上面压着别根签就拔不动，还要扣 2 秒！被压的签会闪红光提示。</span></div></div>
           <div class="help-row"><div class="ico">⏱️</div><div class="t"><b>限时拔完所有签</b><span>手快连击有额外加分，连到位川妹儿直接开夸。金签卤蛋 +8 秒，看到先抢！</span></div></div>
           <div class="help-row"><div class="ico">🥢</div><div class="t"><b>卡住了喊友友帮吃</b><span>成都友友出手，直接替你吃掉最上面 3 签——压住的也照吃！第几碗就有几次，真死锁了还免费送。</span></div></div>
-          <div class="help-row"><div class="ico">👆</div><div class="t"><b>视角随便转</b><span>拖动空白处旋转视角、滚轮/双指缩放，看清楚哪根签在最上面。</span></div></div>
+          <div class="help-row"><div class="ico">👆</div><div class="t"><b>按住瞄准，松手才拔</b><span>手指按住时瞄准的签会发光，可以按着微调，松手才算拔。拖动空白处旋转视角、滚轮/双指缩放。</span></div></div>
           <div class="help-close-wrap"><button class="btn gold small" id="btn-help-close">晓得了</button></div>
         </div>
       </div>
