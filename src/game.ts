@@ -95,6 +95,9 @@ export class Game {
   private ndc = new THREE.Vector2();
   private downPos: { x: number; y: number; t: number } | null = null;
   private rnd = mulberry32((Math.random() * 1e9) | 0);
+  private hoverSk: Skewer | null = null;
+  private ptr = { x: 0, y: 0, over: false, dirty: false };
+  private hoverT = 0;
 
   constructor(env: Env, phys: Physics, uiRoot: HTMLElement) {
     this.env = env;
@@ -176,8 +179,20 @@ export class Game {
   // ---------- 输入 ----------
   private bindPointer() {
     const dom = this.env.renderer.domElement;
+    const track = (e: PointerEvent) => {
+      this.ptr.x = e.clientX;
+      this.ptr.y = e.clientY;
+      this.ptr.over = true;
+      this.ptr.dirty = true;
+    };
+    dom.addEventListener('pointermove', track);
+    dom.addEventListener('pointerleave', () => {
+      this.ptr.over = false;
+      this.ptr.dirty = true;
+    });
     dom.addEventListener('pointerdown', (e) => {
       sfx.unlock();
+      track(e); // 手机端：手指按下立即高亮瞄准的签
       this.downPos = { x: e.clientX, y: e.clientY, t: performance.now() };
     });
     dom.addEventListener('pointerup', (e) => {
@@ -192,7 +207,8 @@ export class Game {
     });
   }
 
-  private clickAt(cx: number, cy: number) {
+  /** 射线找当前指到的签 */
+  private raycastSkewer(cx: number, cy: number): { sk: Skewer; point: THREE.Vector3 } | null {
     this.ndc.set((cx / window.innerWidth) * 2 - 1, -(cy / window.innerHeight) * 2 + 1);
     this.raycaster.setFromCamera(this.ndc, this.env.camera);
     const targets: THREE.Object3D[] = [];
@@ -200,10 +216,37 @@ export class Game {
       if (sk.spawned && !sk.removed && !sk.pulling) targets.push(...sk.pickMeshes);
     }
     const hits = this.raycaster.intersectObjects(targets, false);
-    if (hits.length > 0) {
-      const id = hits[0].object.userData.skewerId as number;
-      const sk = this.skewers.find((s) => s.id === id);
-      if (sk) this.tryPick(sk, hits[0].point);
+    if (hits.length === 0) return null;
+    const id = hits[0].object.userData.skewerId as number;
+    const sk = this.skewers.find((s) => s.id === id);
+    return sk ? { sk, point: hits[0].point } : null;
+  }
+
+  private setHover(sk: Skewer | null) {
+    if (this.hoverSk === sk) return;
+    if (this.hoverSk) this.hoverSk.hovered = false;
+    this.hoverSk = sk;
+    if (sk) sk.hovered = true;
+    this.env.renderer.domElement.style.cursor = sk ? 'pointer' : 'default';
+  }
+
+  private updateHover(dt: number) {
+    this.hoverT -= dt;
+    if (!this.ptr.dirty && this.hoverT > 0) return; // 指针没动就低频跟随（堆会塌落）
+    this.ptr.dirty = false;
+    this.hoverT = 0.25;
+    if (!this.ptr.over || this.state !== 'play') {
+      this.setHover(null);
+      return;
+    }
+    const hit = this.raycastSkewer(this.ptr.x, this.ptr.y);
+    this.setHover(hit ? hit.sk : null);
+  }
+
+  private clickAt(cx: number, cy: number) {
+    const hit = this.raycastSkewer(cx, cy);
+    if (hit) {
+      this.tryPick(hit.sk, hit.point);
       return;
     }
     // 点在汤面上：拨一圈涟漪玩
@@ -234,6 +277,7 @@ export class Game {
     this.idleT = 0;
     this.clearHint();
 
+    if (this.hoverSk === sk) this.setHover(null);
     const pos = sk.group.position.clone();
     sfx.pull(this.combo);
     if (this.combo >= 3) sfx.combo(this.combo - 3);
@@ -491,6 +535,7 @@ export class Game {
     this.helperQueue = [];
     this.env.cupReset();
     this.clearHint();
+    this.setHover(null);
     this.setState('levels');
   }
 
@@ -703,6 +748,10 @@ export class Game {
       } else if (this.remainingCount() === 0 && !this.level.endless) {
         this.finish(true);
       }
+    }
+
+    if (this.state === 'play' || this.hoverSk) {
+      this.updateHover(dt);
     }
 
     this.env.render();

@@ -64,6 +64,7 @@ export class Skewer {
   pulling = false;
   spawned = false;
   splashed = false;
+  hovered = false;
 
   private mats: MatRec[] = [];
   private flashT = 0;
@@ -163,6 +164,11 @@ export class Skewer {
       const k = this.flashT / this.flashDur;
       e = Math.sin(Math.min(1, 1 - k) * Math.PI * 0.5) * k * 1.4;
       color = this.flashColor;
+    } else if (this.hovered) {
+      // 悬停/按住的瞄准高亮：稳定微呼吸
+      this.hintPhase += dt * 6;
+      e = 0.62 + Math.sin(this.hintPhase) * 0.09;
+      color = HOVER_COLOR;
     } else if (this.hinted) {
       this.hintPhase += dt * 5;
       e = (Math.sin(this.hintPhase) * 0.5 + 0.5) * 0.55;
@@ -198,6 +204,7 @@ export class Skewer {
 }
 
 const HINT_COLOR = new THREE.Color('#ffcf5e');
+const HOVER_COLOR = new THREE.Color('#ffe3b4');
 
 function rec(mat: THREE.MeshPhysicalMaterial | THREE.MeshStandardMaterial): MatRec {
   return { mat, e0: mat.emissive.clone(), i0: mat.emissiveIntensity };

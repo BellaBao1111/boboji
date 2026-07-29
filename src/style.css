@@ -169,11 +169,11 @@ body {
 .icon-btn {
   pointer-events: auto;
   cursor: pointer;
-  width: 46px;
-  height: 46px;
+  width: 54px;
+  height: 54px;
   border: none;
-  border-radius: 14px;
-  font-size: 22px;
+  border-radius: 16px;
+  font-size: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -182,6 +182,13 @@ body {
   color: var(--paper-warm);
   backdrop-filter: blur(4px);
   transition: transform 0.08s;
+  position: relative;
+}
+/* 隐形扩大点击热区 */
+.icon-btn::after {
+  content: '';
+  position: absolute;
+  inset: -9px;
 }
 .icon-btn:active {
   transform: scale(0.92);
@@ -369,7 +376,7 @@ body {
 .hud-left,
 .hud-right {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
 }
 .hud-center {
