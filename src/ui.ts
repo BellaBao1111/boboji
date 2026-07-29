@@ -1,4 +1,5 @@
 import { LEVELS, LevelDef } from './config';
+import { t } from './i18n';
 import type { SaveData } from './store';
 
 export interface UICallbacks {
@@ -11,6 +12,7 @@ export interface UICallbacks {
   onNext(): void;
   onHelp(): void;
   onToggleMute(): boolean;
+  onToggleLang(): void;
 }
 
 export interface ResultInfo {
@@ -35,35 +37,52 @@ export class UI {
   private els: Record<string, HTMLElement> = {};
   private comboTimer: number | undefined;
   private announceTimer: number | undefined;
+  private muted: boolean;
 
   constructor(root: HTMLElement, cbs: UICallbacks, muted: boolean) {
     this.root = root;
     this.cbs = cbs;
-    root.innerHTML = `
+    this.muted = muted;
+    this.floatRoot = document.createElement('div');
+    this.floatRoot.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
+    this.render();
+  }
+
+  /** 语言切换后整体重绘（只会在首页触发） */
+  rebuild() {
+    this.render();
+  }
+
+  private render() {
+    const d = t();
+    this.root.innerHTML = `
       <div class="vignette"></div>
 
       <div id="screen-home" class="screen">
-        <div class="home-badge">硅谷冷串串 · 巴适得板</div>
+        <div class="home-badge">${d.badge}</div>
         <div class="home-title"><span class="zh">钵</span><span class="zh">钵</span><span class="zh">鸡</span></div>
-        <div class="home-sub">红油签签 · 压住的莫拔 · 限时清盘</div>
+        <div class="home-sub">${d.sub}</div>
         <div class="home-btns">
-          <button class="btn gold" id="btn-start">开 吃 ！</button>
-          <button class="btn ghost small" id="btn-help">怎么玩</button>
+          <button class="btn gold" id="btn-start">${d.start}</button>
+          <div style="display:flex;gap:12px;">
+            <button class="btn ghost small" id="btn-help">${d.howTo}</button>
+            <button class="btn ghost small" id="btn-lang">🌐 ${d.langBtn}</button>
+          </div>
         </div>
-        <div class="home-foot">作者：圣何塞椰子鸡 · 致敬我最好的成都友友们</div>
+        <div class="home-foot">${d.footer}</div>
       </div>
 
       <div id="screen-levels" class="screen">
-        <div class="levels-title">点 单</div>
+        <div class="levels-title">${d.menuTitle}</div>
         <div class="level-cards" id="level-cards"></div>
-        <button class="btn ghost small" id="btn-levels-back">返回</button>
+        <button class="btn ghost small" id="btn-levels-back">${d.back}</button>
       </div>
 
       <div id="screen-hud" class="screen">
         <div class="hud-top">
           <div class="hud-left">
-            <button class="icon-btn" id="btn-pause" title="暂停">⏸</button>
-            <button class="icon-btn" id="btn-mute" title="声音">${muted ? '🔇' : '🔊'}</button>
+            <button class="icon-btn" id="btn-pause" title="pause">⏸</button>
+            <button class="icon-btn" id="btn-mute" title="sound">${this.muted ? '🔇' : '🔊'}</button>
           </div>
           <div class="hud-center">
             <div class="timer-wrap" id="timer-wrap">
@@ -75,8 +94,8 @@ export class UI {
             </div>
           </div>
           <div class="hud-right">
-            <div class="hud-stat"><div class="v" id="stat-count">0</div><div class="k">剩余签</div></div>
-            <div class="hud-stat"><div class="v" id="stat-score">0</div><div class="k">得分</div></div>
+            <div class="hud-stat"><div class="v" id="stat-count">0</div><div class="k">${d.statLeft}</div></div>
+            <div class="hud-stat"><div class="v" id="stat-score">0</div><div class="k">${d.statScore}</div></div>
           </div>
         </div>
         <div class="combo-pop" id="combo-pop">
@@ -84,9 +103,9 @@ export class UI {
           <div class="combo-word" id="combo-word"></div>
         </div>
         <div class="hud-bottom">
-          <button class="shake-btn" id="btn-help-eat">🥢 帮吃 <span class="cnt" id="help-cnt"></span></button>
+          <button class="shake-btn" id="btn-help-eat">🥢 ${d.helpEat} <span class="cnt" id="help-cnt"></span></button>
         </div>
-        <div class="goal-tip" id="goal-tip">点没被压住的签 · 拖动空白处转视角</div>
+        <div class="goal-tip" id="goal-tip">${d.goalTip}</div>
         <div class="announce" id="announce"></div>
       </div>
 
@@ -96,31 +115,30 @@ export class UI {
 
       <div id="screen-pause" class="screen">
         <div class="panel result-panel">
-          <div class="pause-title">歇口气</div>
-          <div class="result-sub">汤还热着，签签不等人～</div>
+          <div class="pause-title">${d.pauseTitle}</div>
+          <div class="result-sub">${d.pauseSub}</div>
           <div class="result-btns">
-            <button class="btn gold" id="btn-resume">继续吃</button>
-            <button class="btn small" id="btn-pause-retry">重新上桌</button>
-            <button class="btn ghost small" id="btn-pause-quit">换个碗</button>
+            <button class="btn gold" id="btn-resume">${d.resume}</button>
+            <button class="btn small" id="btn-pause-retry">${d.restart}</button>
+            <button class="btn ghost small" id="btn-pause-quit">${d.changeBowl}</button>
           </div>
         </div>
       </div>
 
       <div id="screen-help" class="screen">
         <div class="panel help-panel">
-          <h3>怎么吃钵钵鸡</h3>
-          <div class="help-row"><div class="ico">🍢</div><div class="t"><b>只能拔没被压住的签</b><span>签签在红汤里层层叠叠，上面压着别根签就拔不动，还要扣 2 秒！被压的签会闪红光提示。</span></div></div>
-          <div class="help-row"><div class="ico">⏱️</div><div class="t"><b>限时拔完所有签</b><span>手快连击有额外加分，连到位川妹儿直接开夸。金签卤蛋 +8 秒，看到先抢！</span></div></div>
-          <div class="help-row"><div class="ico">🥢</div><div class="t"><b>卡住了喊友友帮吃</b><span>成都友友出手，直接替你吃掉最上面 3 签——压住的也照吃！第几碗就有几次，真死锁了还免费送。</span></div></div>
-          <div class="help-row"><div class="ico">👆</div><div class="t"><b>按住瞄准，松手才拔</b><span>手指按住时瞄准的签会发光，可以按着微调，松手才算拔。拖动空白处旋转视角、滚轮/双指缩放。</span></div></div>
-          <div class="help-close-wrap"><button class="btn gold small" id="btn-help-close">晓得了</button></div>
+          <h3>${d.helpTitle}</h3>
+          ${d.helpRows
+            .map(
+              (r) =>
+                `<div class="help-row"><div class="ico">${r.ico}</div><div class="t"><b>${r.title}</b><span>${r.body}</span></div></div>`,
+            )
+            .join('')}
+          <div class="help-close-wrap"><button class="btn gold small" id="btn-help-close">${d.gotIt}</button></div>
         </div>
       </div>
     `;
-
-    this.floatRoot = document.createElement('div');
-    this.floatRoot.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
-    root.appendChild(this.floatRoot);
+    this.root.appendChild(this.floatRoot);
 
     const ids = [
       'screen-home', 'screen-levels', 'screen-hud', 'screen-result', 'screen-pause', 'screen-help',
@@ -137,6 +155,7 @@ export class UI {
       });
     on('btn-start', () => this.cbs.onStart());
     on('btn-help', () => this.show('help'));
+    on('btn-lang', () => this.cbs.onToggleLang());
     on('btn-help-close', () => this.show(this.helpReturn));
     on('btn-levels-back', () => this.show('home'));
     on('btn-pause', () => this.cbs.onPause());
@@ -145,8 +164,8 @@ export class UI {
     on('btn-pause-quit', () => this.cbs.onQuitToLevels());
     on('btn-help-eat', () => this.cbs.onHelp());
     on('btn-mute', () => {
-      const muted = this.cbs.onToggleMute();
-      this.els['btn-mute'].textContent = muted ? '🔇' : '🔊';
+      this.muted = this.cbs.onToggleMute();
+      this.els['btn-mute'].textContent = this.muted ? '🔇' : '🔊';
     });
   }
 
@@ -156,18 +175,20 @@ export class UI {
   show(name: 'home' | 'levels' | 'hud' | 'result' | 'pause' | 'help') {
     if (name === 'help') this.helpReturn = this.current === 'levels' ? 'levels' : 'home';
     for (const s of ['home', 'levels', 'hud', 'result', 'pause', 'help']) {
-      this.els[`screen-${s}`].classList.toggle('on', s === name || (name === 'pause' && s === 'hud') || (name === 'result' && s === 'hud'));
-    }
-    if (name !== 'pause' && name !== 'result') {
-      // hud 独占时确保其它遮罩层关闭
+      this.els[`screen-${s}`].classList.toggle(
+        'on',
+        s === name || (name === 'pause' && s === 'hud') || (name === 'result' && s === 'hud'),
+      );
     }
     this.current = name;
   }
 
   refreshLevels(save: SaveData) {
+    const d = t();
     const wrap = this.els['level-cards'];
     wrap.innerHTML = '';
     for (const lv of LEVELS) {
+      const text = d.levels[lv.id];
       const unlocked = this.isUnlocked(lv, save);
       const stars = save.stars[lv.id] ?? 0;
       const best = save.best[lv.id] ?? 0;
@@ -179,10 +200,10 @@ export class UI {
       card.innerHTML = `
         ${unlocked ? '' : '<span class="lv-lock">🔒</span>'}
         <span class="lv-emoji">${lv.emoji}</span>
-        <span class="lv-name">${lv.name}</span>
-        <span class="lv-desc">${lv.desc.replace('\n', '<br>')}</span>
+        <span class="lv-name">${text.name}</span>
+        <span class="lv-desc">${text.desc.replace('\n', '<br>')}</span>
         ${starsHtml}
-        <div class="lv-best">${best > 0 ? `最高 ${best} 分` : unlocked ? '还没吃过' : '先吃上一碗'}</div>
+        <div class="lv-best">${best > 0 ? d.bestPrefix(best) : unlocked ? d.notTried : d.lockedHint}</div>
       `;
       if (unlocked) card.addEventListener('click', () => this.cbs.onSelectLevel(lv.id));
       wrap.appendChild(card);
@@ -226,7 +247,7 @@ export class UI {
 
   combo(n: number, word?: string) {
     const pop = this.els['combo-pop'];
-    this.els['combo-num'].textContent = `连击 ×${n}`;
+    this.els['combo-num'].textContent = `${t().comboPrefix}${n}`;
     this.els['combo-word'].textContent = word ?? '';
     pop.classList.remove('show');
     void (pop as HTMLElement).offsetWidth;
@@ -255,31 +276,32 @@ export class UI {
 
   // ---------- 结算 ----------
   showResult(info: ResultInfo) {
+    const d = t();
     const p = this.els['result-panel'];
     const stars = info.endless
       ? ''
       : `<div class="result-stars">${[1, 2, 3].map((i) => `<span class="${i <= info.stars ? 'lit' : ''}">★</span>`).join('')}</div>`;
-    const title = info.endless ? '吃饱了！' : info.win ? '光盘咯！' : '时间到咯～';
+    const title = info.endless ? d.fullTitle : info.win ? d.winTitle : d.loseTitle;
     const sub = info.endless
-      ? `流水席上一共拔了 <b>${info.picked}</b> 签`
+      ? d.fullSub(info.picked)
       : info.win
-        ? `「${info.levelName}」一共 ${info.total} 签，全部安排！`
-        : `还剩 ${info.remaining} 签没拔完，再来一盘嘛`;
+        ? d.winSub(info.levelName, info.total)
+        : d.loseSub(info.remaining);
     p.innerHTML = `
       <div class="result-title">${title}</div>
       <div class="result-sub">${sub}</div>
       ${stars}
       <div class="result-rows">
-        <div class="rrow"><div class="k">拔签</div><div class="v">${info.picked} 签</div></div>
-        <div class="rrow"><div class="k">用时</div><div class="v">${info.timeUsed.toFixed(0)}s</div></div>
-        <div class="rrow"><div class="k">最高连击</div><div class="v">×${info.bestCombo}</div></div>
-        <div class="rrow"><div class="k">结账</div><div class="v">${info.picked * 2} 元</div></div>
+        <div class="rrow"><div class="k">${d.rowPick}</div><div class="v">${d.pickVal(info.picked)}</div></div>
+        <div class="rrow"><div class="k">${d.rowTime}</div><div class="v">${info.timeUsed.toFixed(0)}s</div></div>
+        <div class="rrow"><div class="k">${d.rowCombo}</div><div class="v">×${info.bestCombo}</div></div>
+        <div class="rrow"><div class="k">${d.rowBill}</div><div class="v">${d.billVal(info.picked)}</div></div>
       </div>
-      <div class="result-score">总分${info.isNewBest ? ' · 🎉 新纪录！' : ''}<b>${info.score}</b></div>
+      <div class="result-score">${d.scoreLabel}${info.isNewBest ? d.newRecord : ''}<b>${info.score}</b></div>
       <div class="result-btns">
-        ${info.win && info.hasNext ? '<button class="btn gold" id="btn-next">下一碗</button>' : ''}
-        <button class="btn ${info.win && info.hasNext ? 'small' : 'gold'}" id="btn-retry">再来一份</button>
-        <button class="btn ghost small" id="btn-quit">换个碗</button>
+        ${info.win && info.hasNext ? `<button class="btn gold" id="btn-next">${d.nextBowl}</button>` : ''}
+        <button class="btn ${info.win && info.hasNext ? 'small' : 'gold'}" id="btn-retry">${d.oneMore}</button>
+        <button class="btn ghost small" id="btn-quit">${d.changeBowl}</button>
       </div>
     `;
     p.querySelector('#btn-retry')!.addEventListener('click', () => this.cbs.onRetry());

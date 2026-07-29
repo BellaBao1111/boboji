@@ -258,9 +258,13 @@ body {
 }
 .home-sub {
   color: var(--paper-warm);
-  font-size: clamp(16px, 4vw, 21px);
-  letter-spacing: 5px;
+  font-size: clamp(15px, 3.6vw, 20px);
+  letter-spacing: 2px;
   margin: 6px 0 30px;
+  padding: 0 28px;
+  max-width: 620px;
+  text-align: center;
+  line-height: 1.6;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
   opacity: 0.95;
 }
@@ -328,12 +332,15 @@ body {
 }
 .level-card .lv-emoji { font-size: 44px; display: block; }
 .level-card .lv-name {
+  display: block;
   font-family: var(--font-title);
-  font-size: 30px;
+  font-size: 28px;
+  line-height: 1.15;
   color: var(--red-deep);
-  margin: 6px 0 2px;
+  margin: 6px 0 3px;
 }
 .level-card .lv-desc {
+  display: block;
   font-size: 13px;
   color: #7a5a3a;
   line-height: 1.5;

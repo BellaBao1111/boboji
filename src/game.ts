@@ -7,7 +7,8 @@ import { ResultInfo, UI } from './ui';
 import { Skewer } from './skewer';
 import { sfx } from './sfx';
 import { loadSave, persist } from './store';
-import { BLOCKED_TEXTS, BOWL, ENDLESS, LEVELS, LevelDef, PRAISES, RULES } from './config';
+import { BOWL, ENDLESS, LEVELS, LevelDef, RULES } from './config';
+import { getLang, initLang, setLang, t } from './i18n';
 import { mulberry32 } from './textures';
 
 type State = 'home' | 'levels' | 'intro' | 'play' | 'pause' | 'result';
@@ -108,6 +109,8 @@ export class Game {
     this.particles.onBrothSplash = (x, z) => this.broth.addRipple(x, z, 0.35);
 
     sfx.muted = this.save.muted;
+    initLang(this.save.lang);
+    document.title = t().pageTitle;
 
     this.ui = new UI(
       uiRoot,
@@ -160,6 +163,17 @@ export class Game {
           sfx.setMuted(this.save.muted);
           persist(this.save);
           return this.save.muted;
+        },
+        onToggleLang: () => {
+          sfx.unlock();
+          sfx.click();
+          const next = getLang() === 'zh' ? 'en' : 'zh';
+          setLang(next);
+          this.save.lang = next;
+          persist(this.save);
+          document.title = t().pageTitle;
+          this.ui.rebuild();
+          this.ui.show('home');
         },
       },
       this.save.muted,
@@ -299,7 +313,7 @@ export class Game {
     const pos = sk.group.position.clone();
     sfx.pull(this.combo);
     if (this.combo >= 3) sfx.combo(this.combo - 3);
-    const praise = PRAISES.find(([n]) => n === this.combo);
+    const praise = t().praises.find(([n]) => n === this.combo);
     if (praise) {
       this.ui.combo(this.combo, praise[1]);
       sfx.praise();
@@ -312,7 +326,7 @@ export class Game {
       this.timeLeft += RULES.goldBonusTime;
       this.score += RULES.goldBonusScore;
       sfx.golden();
-      this.floats.spawn(pos, `黄金卤蛋 +${RULES.goldBonusTime}s`, 'good');
+      this.floats.spawn(pos, t().golden(RULES.goldBonusTime), 'good');
     } else {
       this.floats.spawn(pos, `+${gained}`, this.combo >= 3 ? 'good' : '');
     }
@@ -352,7 +366,8 @@ export class Game {
     this.phys.nudge(sk);
     this.env.shake(0.4);
     const p = hitPoint ?? sk.group.position;
-    const txt = BLOCKED_TEXTS[(this.rnd() * BLOCKED_TEXTS.length) | 0];
+    const texts = t().blocked;
+    const txt = texts[(this.rnd() * texts.length) | 0];
     this.floats.spawn(p, `${txt} -${RULES.blockPenalty}s`, 'bad');
   }
 
@@ -500,7 +515,7 @@ export class Game {
     this.ui.setHelps(this.helpsLeft, true);
     this.ui.setTimer(this.timeLeft, def.time);
     this.ui.goalTip(true);
-    this.ui.announce(`${def.name}上桌！`, 1000);
+    this.ui.announce(t().serve(t().levels[def.id].name), 1000);
     this.setState('intro');
     this.introEndAt = this.clock + def.count * 0.075 + 1.35;
   }
@@ -531,7 +546,7 @@ export class Game {
     const remaining = this.remainingCount();
     if (remaining >= ENDLESS.maxActive) return;
     const n = Math.min(ENDLESS.refillCount, ENDLESS.maxActive - remaining);
-    this.ui.announce('老板加签！', 1000);
+    this.ui.announce(t().refill, 1000);
     sfx.praise();
     for (let i = 0; i < n; i++) {
       this.endlessGoldenCounter++;
@@ -568,16 +583,16 @@ export class Game {
       const ratio = this.timeLeft / this.level.time;
       stars = ratio >= 0.45 ? 3 : ratio >= 0.18 ? 2 : 1;
       sfx.win();
-      this.ui.announce('光盘咯！', 1400);
+      this.ui.announce(t().winShout, 1400);
       const c = new THREE.Vector3(0, BOWL.rimY + 0.4, 0);
       this.particles.confetti(c, 70);
       setTimeout(() => this.state === 'result' && this.particles.confetti(c.clone().setY(2), 50), 380);
     } else if (this.level.endless) {
       sfx.win();
-      this.ui.announce('吃饱了！', 1200);
+      this.ui.announce(t().fullShout, 1200);
     } else {
       sfx.lose();
-      this.ui.announce('时间到咯～', 1200);
+      this.ui.announce(t().loseShout, 1200);
     }
 
     // 存档
@@ -592,7 +607,7 @@ export class Game {
     const info: ResultInfo = {
       win,
       endless: !!this.level.endless,
-      levelName: this.level.name,
+      levelName: t().levels[this.level.id].name,
       stars,
       picked: this.pickedCount(),
       total: this.skewers.length,
@@ -618,7 +633,7 @@ export class Game {
     this.helpsLeft--;
     this.helpCooldown = 1.2;
     this.ui.setHelps(this.helpsLeft, false);
-    this.ui.announce('友友帮吃！', 950);
+    this.ui.announce(t().helperShout, 950);
     sfx.slosh();
     this.env.shake(0.5);
     targets.forEach((sk, i) => {
@@ -677,7 +692,7 @@ export class Game {
     if (this.phys.freeList(alive).length === 0 && this.helpsLeft <= 0 && this.helperQueue.length === 0) {
       this.helpsLeft = 1;
       this.ui.setHelps(this.helpsLeft, true);
-      this.floats.spawnScreen(0.5, 0.62, '签签卡死了，友友来帮吃一口！', 'good');
+      this.floats.spawnScreen(0.5, 0.62, t().deadlockGift, 'good');
     }
   }
 
@@ -726,7 +741,7 @@ export class Game {
 
     if (this.state === 'intro' && this.clock >= this.introEndAt) {
       this.setState('play');
-      this.ui.announce('开吃！', 1100);
+      this.ui.announce(t().digIn, 1100);
       sfx.praise();
     }
 

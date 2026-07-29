@@ -4,6 +4,7 @@ export interface SaveData {
   stars: Record<string, number>;
   best: Record<string, number>;
   muted: boolean;
+  lang?: string;
 }
 
 export function loadSave(): SaveData {
@@ -11,7 +12,7 @@ export function loadSave(): SaveData {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const d = JSON.parse(raw);
-      return { stars: d.stars ?? {}, best: d.best ?? {}, muted: !!d.muted };
+      return { stars: d.stars ?? {}, best: d.best ?? {}, muted: !!d.muted, lang: d.lang };
     }
   } catch {
     /* ignore */

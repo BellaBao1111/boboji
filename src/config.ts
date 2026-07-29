@@ -41,9 +41,7 @@ export const RULES = {
 
 export interface LevelDef {
   id: string;
-  name: string;
   emoji: string;
-  desc: string;
   count: number;
   time: number;
   golden: number;
@@ -51,21 +49,12 @@ export interface LevelDef {
   endless?: boolean;
 }
 
+// 关卡名称/文案见 i18n.ts
 export const LEVELS: LevelDef[] = [
-  { id: 'l1', name: '小碗', emoji: '🥣', desc: '16 串 · 90 秒\n先垫个肚子', count: 16, time: 90, golden: 0, helps: 1 },
-  { id: 'l2', name: '中碗', emoji: '🍜', desc: '26 串 · 110 秒\n吃出节奏了', count: 26, time: 110, golden: 1, helps: 2 },
-  { id: 'l3', name: '大盆', emoji: '🍲', desc: '38 串 · 140 秒\n老板多舀点汤', count: 38, time: 140, golden: 2, helps: 3 },
-  {
-    id: 'endless',
-    name: '流水席',
-    emoji: '♾️',
-    desc: '吃不完根本吃不完\n拔一签回一口气',
-    count: 14,
-    time: 55,
-    golden: 0,
-    helps: 3,
-    endless: true,
-  },
+  { id: 'l1', emoji: '🥣', count: 16, time: 90, golden: 0, helps: 1 },
+  { id: 'l2', emoji: '🍜', count: 26, time: 110, golden: 1, helps: 2 },
+  { id: 'l3', emoji: '🍲', count: 38, time: 140, golden: 2, helps: 3 },
+  { id: 'endless', emoji: '♾️', count: 14, time: 55, golden: 0, helps: 3, endless: true },
 ];
 
 export const ENDLESS = {
@@ -77,15 +66,6 @@ export const ENDLESS = {
   goldenEvery: 24,
 };
 
-// 连击夸人（川味）
-export const PRAISES: [number, string][] = [
-  [3, '巴适！'],
-  [5, '安逸～'],
-  [8, '雄起！'],
-  [12, '不摆了！'],
-  [16, '神仙手速！'],
-];
-
-export const BLOCKED_TEXTS = ['压住了！', '上头有签！', '先拿上面的！', '莫急莫急！'];
+// 连击夸人 / 被压提示文案见 i18n.ts
 
 export const STORE_KEY = 'boboji-save-v1';
