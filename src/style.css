@@ -1,3 +1,19 @@
+/* 本地子集字体（OFL 协议，随包分发）：离线可用，国内也秒加载 */
+@font-face {
+  font-family: 'Ma Shan Zheng';
+  src: url('./assets/fonts/MaShanZheng-sub.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ZCOOL KuaiLe';
+  src: url('./assets/fonts/ZCOOLKuaiLe-sub.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --red: #c22f1e;
   --red-deep: #8e1a12;
