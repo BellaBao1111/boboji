@@ -10,5 +10,12 @@ export default defineConfig({
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 4096,
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        // 摇摇酒馆：/cocktail/ 子页面
+        cocktail: 'cocktail/index.html',
+      },
+    },
   },
 });
