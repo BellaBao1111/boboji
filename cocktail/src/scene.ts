@@ -153,6 +153,7 @@ export class Scene {
     this.drawRoom();
     this.drawWindow(dt);
     this.drawNeon(s.neonText);
+    this.drawLamp();
     this.drawCounter();
 
     const g = this.glass();
@@ -297,6 +298,58 @@ export class Scene {
     ctx.restore();
   }
 
+  // -------- 吊灯：暖光锥打在杯子上 --------
+  private drawLamp() {
+    const { ctx, w } = this;
+    const g = this.glass();
+    if (g.top < 195) return; // 屏幕太矮就不挂灯
+    const cx = w / 2;
+    const sy = g.top - 92; // 灯罩下沿
+    // 电线
+    ctx.strokeStyle = 'rgba(180, 150, 105, 0.5)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(cx, 0);
+    ctx.lineTo(cx, sy - 15);
+    ctx.stroke();
+    // 光锥
+    const cone = ctx.createLinearGradient(0, sy, 0, g.bottom + 16);
+    cone.addColorStop(0, 'rgba(255, 208, 132, 0.13)');
+    cone.addColorStop(1, 'rgba(255, 208, 132, 0)');
+    ctx.fillStyle = cone;
+    ctx.beginPath();
+    ctx.moveTo(cx - 15, sy);
+    ctx.lineTo(cx + 15, sy);
+    ctx.lineTo(cx + g.wTop * 1.1, g.bottom + 16);
+    ctx.lineTo(cx - g.wTop * 1.1, g.bottom + 16);
+    ctx.closePath();
+    ctx.fill();
+    // 灯罩（黄铜）
+    const brass = ctx.createLinearGradient(cx - 17, 0, cx + 17, 0);
+    brass.addColorStop(0, '#5c4123');
+    brass.addColorStop(0.35, '#caa25c');
+    brass.addColorStop(0.55, '#eed9a6');
+    brass.addColorStop(0.75, '#a5793f');
+    brass.addColorStop(1, '#503a20');
+    ctx.fillStyle = brass;
+    ctx.beginPath();
+    ctx.moveTo(cx - 17, sy);
+    ctx.lineTo(cx + 17, sy);
+    ctx.lineTo(cx + 6, sy - 15);
+    ctx.lineTo(cx - 6, sy - 15);
+    ctx.closePath();
+    ctx.fill();
+    // 灯泡暖光
+    const bulb = ctx.createRadialGradient(cx, sy + 3, 1, cx, sy + 3, 26);
+    bulb.addColorStop(0, 'rgba(255, 232, 178, 0.95)');
+    bulb.addColorStop(0.25, 'rgba(255, 214, 140, 0.35)');
+    bulb.addColorStop(1, 'rgba(255, 214, 140, 0)');
+    ctx.fillStyle = bulb;
+    ctx.beginPath();
+    ctx.arc(cx, sy + 3, 26, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   // -------- 吧台 --------
   private drawCounter() {
     const { ctx, w, h } = this;
@@ -308,9 +361,15 @@ export class Scene {
     grad.addColorStop(1, '#20141f');
     ctx.fillStyle = grad;
     ctx.fillRect(0, cy, w, h - cy);
-    // 台面高光边
-    ctx.fillStyle = 'rgba(255,190,120,0.30)';
-    ctx.fillRect(0, cy, w, 2.5);
+    // 黄铜台沿
+    const rail = ctx.createLinearGradient(0, cy, 0, cy + 5);
+    rail.addColorStop(0, 'rgba(238,217,166,0.75)');
+    rail.addColorStop(0.5, 'rgba(190,148,88,0.55)');
+    rail.addColorStop(1, 'rgba(90,62,32,0.6)');
+    ctx.fillStyle = rail;
+    ctx.fillRect(0, cy, w, 4);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(0, cy + 4, w, 1.5);
     // 木纹
     ctx.strokeStyle = 'rgba(0,0,0,0.16)';
     ctx.lineWidth = 1;
@@ -640,9 +699,9 @@ export class Scene {
     }
     // 完成光环
     if (s.shakeProgress >= 0.995) {
-      ctx.strokeStyle = 'rgba(140,240,220,0.85)';
+      ctx.strokeStyle = 'rgba(238,217,166,0.9)';
       ctx.lineWidth = 3;
-      ctx.shadowColor = 'rgba(140,240,220,0.9)';
+      ctx.shadowColor = 'rgba(238,217,166,0.9)';
       ctx.shadowBlur = 16;
       ctx.beginPath();
       ctx.ellipse(0, sh * 0.06, hw * 1.3, sh * 0.62, 0, 0, Math.PI * 2);
@@ -650,7 +709,7 @@ export class Scene {
     }
     ctx.restore();
     // 进度环
-    this.drawProgressRing(g.cx, g.top - 40, s.shakeProgress, '#4dd8c0');
+    this.drawProgressRing(g.cx, g.top - 40, s.shakeProgress, '#eed9a6');
   }
 
   // -------- 吧勺 / 研杵 --------
@@ -680,7 +739,7 @@ export class Scene {
       ctx.stroke();
     }
     ctx.restore();
-    this.drawProgressRing(g.cx, g.top - 40, s.stirProgress, '#ffb454');
+    this.drawProgressRing(g.cx, g.top - 40, s.stirProgress, '#eed9a6');
   }
 
   private drawPestle(g: GlassGeom, s: SceneState) {
@@ -698,7 +757,7 @@ export class Scene {
     ctx.ellipse(0, 2, 11, 8, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
-    this.drawProgressRing(g.cx, g.top - 70, s.muddlePress, '#5cbf7d');
+    this.drawProgressRing(g.cx, g.top - 70, s.muddlePress, '#eed9a6');
   }
 
   private drawProgressRing(x: number, y: number, p: number, color: string) {

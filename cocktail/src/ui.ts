@@ -68,6 +68,27 @@ export interface SummaryRow { emoji: string; name: string; tip: number }
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 
+// 手绘线性图标（统一 1.7 描边，取代 emoji 的"高级感"关键）
+const svg = (inner: string) =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+
+export const ICONS: Record<string, string> = {
+  ice: svg('<path d="M12 3.5v17M4.6 7.75l14.8 8.5M19.4 7.75L4.6 16.25"/><path d="M12 3.5l-1.8 1.8M12 3.5l1.8 1.8M12 20.5l-1.8-1.8M12 20.5l1.8-1.8"/>'),
+  muddle: svg('<path d="M16.5 3.5l4 4"/><path d="M18.5 5.5L9.5 14.5"/><circle cx="7" cy="17" r="3.6" fill="currentColor" stroke="none" opacity="0.85"/><path d="M3.5 21h9"/>'),
+  stir: svg('<path d="M13 3c-2 1.6-2 3.4 0 5s2 3.4 0 5"/><path d="M13 13v5"/><ellipse cx="13" cy="19.6" rx="2.6" ry="1.8"/>'),
+  shake: svg('<path d="M9.5 3.5h5l.8 2.5H8.7z"/><path d="M8.7 6h6.6l1.4 12.2a1.8 1.8 0 01-1.8 1.8h-5.8a1.8 1.8 0 01-1.8-1.8z"/><path d="M4.5 9L3 8M19.5 9l1.5-1M4 13.5H2.5M20 13.5h1.5"/>'),
+  dump: svg('<g transform="rotate(-30 11 10)"><path d="M7 4.5h9l-1.4 10H8.4z"/></g><path d="M15.5 16.5v2.2M18.3 18.2l.01.01M13 19.8l.01.01"/>'),
+  serve: svg('<path d="M12 5a7 7 0 017 7v2.5H5V12a7 7 0 017-7z"/><path d="M3.5 17.5h17"/><path d="M12 5V3.5"/>'),
+  home: svg('<path d="M4.5 11L12 4.5 19.5 11"/><path d="M6.5 9.5V19a.9.9 0 00.9.9h9.2a.9.9 0 00.9-.9V9.5"/>'),
+  book: svg('<path d="M5 19.2A2.2 2.2 0 017.2 17H19V3.5H7.2A2.2 2.2 0 005 5.7z"/><path d="M5 19.2V20a.8.8 0 00.8.8H19V17"/>'),
+  sound: svg('<path d="M10.5 5.5L6.5 9H4v6h2.5l4 3.5z"/><path d="M14.5 9.5a3.6 3.6 0 010 5M17 7.5a6.5 6.5 0 010 9"/>'),
+  soundOff: svg('<path d="M10.5 5.5L6.5 9H4v6h2.5l4 3.5z"/><path d="M15 10l5 4.5M20 10l-5 4.5"/>'),
+  jigger: svg('<path d="M7.5 3.5h9L13.8 10h-3.6z"/><path d="M7.5 20.5h9L13.8 14h-3.6z"/>'),
+  martini: svg('<path d="M4.5 5h15L12 13.5z"/><path d="M12 13.5V19"/><path d="M8.5 20.5h7"/><circle cx="14.6" cy="7.6" r="1.5"/>'),
+  moon: svg('<path d="M19.5 13.5A7.8 7.8 0 1110.5 4a6.2 6.2 0 009 9.5z"/>'),
+  flask: svg('<path d="M10 3.5v5.6l-4.6 8.4A1.9 1.9 0 007.1 20h9.8a1.9 1.9 0 001.7-2.5L14 9.1V3.5"/><path d="M8.5 3.5h7M8.5 14.5h7"/>'),
+};
+
 export class UI {
   private dict: Dict;
   private hooks: UIHooks;
@@ -230,19 +251,19 @@ export class UI {
   private buildActions() {
     const bar = $('#actions');
     bar.innerHTML = '';
-    const defs: [ActionId, string, string][] = [
-      ['ice', '🧊', this.dict.actIceNone],
-      ['muddle', '🥢', this.dict.actMuddle],
-      ['stir', '🥄', this.dict.actStir],
-      ['shake', '🫨', this.dict.actShake],
-      ['dump', '🚰', this.dict.actDump],
-      ['serve', '🛎️', this.dict.actServe],
+    const defs: [ActionId, string][] = [
+      ['ice', this.dict.actIceNone],
+      ['muddle', this.dict.actMuddle],
+      ['stir', this.dict.actStir],
+      ['shake', this.dict.actShake],
+      ['dump', this.dict.actDump],
+      ['serve', this.dict.actServe],
     ];
-    for (const [id, emoji, label] of defs) {
+    for (const [id, label] of defs) {
       const b = document.createElement('button');
       b.className = `act act-${id}`;
       b.dataset.act = id;
-      b.innerHTML = `<span class="act-emoji">${emoji}</span><span class="act-label" data-actlabel="${id}">${label}</span>`;
+      b.innerHTML = `<span class="act-icon">${ICONS[id]}</span><span class="act-label" data-actlabel="${id}">${label}</span>`;
       b.addEventListener('click', () => this.hooks.onAction(id));
       bar.appendChild(b);
     }
@@ -263,14 +284,16 @@ export class UI {
   refreshLabels(muted?: boolean, measure?: boolean) {
     document.title = this.dict.pageTitle;
     $('#btn-lang').textContent = this.dict.langBtn;
-    $('#btn-book').textContent = `📖 ${this.dict.book}`;
+    $('#btn-book').innerHTML = `${ICONS.book}<span>${this.dict.book}</span>`;
+    $('#btn-home').innerHTML = ICONS.home;
     if (muted !== undefined) this.setMuted(muted);
     if (measure !== undefined) this.setMeasure(measure);
   }
 
-  setMuted(m: boolean) { $('#btn-mute').textContent = m ? '🔇' : '🔊'; }
+  setMuted(m: boolean) { $('#btn-mute').innerHTML = m ? ICONS.soundOff : ICONS.sound; }
   setMeasure(on: boolean) {
-    $('#btn-measure').textContent = on ? '🫗' : '🫗✨';
+    $('#btn-measure').innerHTML = ICONS.jigger;
+    $('#btn-measure').classList.toggle('off', !on);
     $('#btn-measure').title = on ? this.dict.measureOn : this.dict.measureOff;
   }
   setMade(n: number) { $('#made').textContent = this.dict.statMade(n); }
@@ -328,7 +351,7 @@ export class UI {
   showResult(v: ResultView) {
     const card = $('#result-card');
     const starsHtml = v.stars
-      ? `<div class="stars">${'★'.repeat(v.stars)}${'<span class="dim">★</span>'.repeat(3 - v.stars)}</div>`
+      ? `<div class="stars">${'★'.repeat(v.stars)}${'<span class="dim">☆</span>'.repeat(3 - v.stars)}</div>`
       : '';
     const attrsHtml = v.attrs
       .map((a, i) => `
@@ -347,7 +370,7 @@ export class UI {
       </div>` : '';
     card.innerHTML = `
       <div class="badge badge-${v.badgeKind}">${v.badge}</div>
-      <h2 class="drink-name">${v.emoji ?? ''} ${escapeHtml(v.name)}</h2>
+      <h2 class="drink-name serif">${v.emoji ?? ''} ${escapeHtml(v.name)}</h2>
       ${starsHtml}
       <div class="result-body">
         <canvas id="drink-cv" width="150" height="200"></canvas>
@@ -383,7 +406,7 @@ export class UI {
     ];
     card.innerHTML = `
       <div class="book-head">
-        <h2>📖 ${this.dict.bookTitle}</h2>
+        <h2 class="serif"><span class="bh-icon">${ICONS.book}</span>${this.dict.bookTitle}</h2>
         <span class="progress">${this.dict.progress(discovered, RECIPES.length)}</span>
         <button id="btn-book-close" class="mini-btn">✕ ${this.dict.close}</button>
       </div>
@@ -431,8 +454,8 @@ export class UI {
           .join(' · ');
         const tech = r.tech.map((t) => this.dict.techLabel[t]).join('/') + (r.muddle ? ` · ${this.dict.muddleMark}` : '');
         info.innerHTML = `
-          <div class="book-name">${escapeHtml(this.recipeName(r))}
-            <span class="book-stars">${'★'.repeat(got.stars)}${'<span class="dim">★</span>'.repeat(Math.max(0, 3 - got.stars))}</span>
+          <div class="book-name serif">${escapeHtml(this.recipeName(r))}
+            <span class="book-stars">${'★'.repeat(got.stars)}${'<span class="dim">☆</span>'.repeat(Math.max(0, 3 - got.stars))}</span>
           </div>
           <div class="book-recipe">${escapeHtml(this.dict.recipeOf)}: ${escapeHtml(items)} 〔${escapeHtml(tech)}〕</div>
           <div class="book-lore">${escapeHtml(this.isZh() ? r.loreZh : r.loreEn)}</div>
@@ -506,23 +529,27 @@ export class UI {
   showTitle(stats: { money: number; nights: number; discovered: number; total: number }) {
     const card = $('#title-card');
     card.innerHTML = `
-      <div class="title-neon">🍸</div>
-      <h1 class="title-logo">${escapeHtml(this.dict.barName)}</h1>
+      <div class="title-mark">${ICONS.martini}</div>
+      <h1 class="title-logo serif">${escapeHtml(this.dict.barName)}</h1>
+      <div class="title-sub">THE TIPSY SHAKER</div>
+      <div class="title-rule"><i></i><b>◆</b><i></i></div>
       <p class="title-tagline">${escapeHtml(this.dict.tagline)}</p>
       <div class="title-stats">
         <span>${escapeHtml(this.dict.totalTips(stats.money))}</span>
+        <span class="ts-dot">·</span>
         <span>${escapeHtml(this.dict.nightsPlayed(stats.nights))}</span>
+        <span class="ts-dot">·</span>
         <span>${escapeHtml(this.dict.discoveredShort(stats.discovered, stats.total))}</span>
       </div>
       <div class="title-btns">
-        <button id="btn-night" class="primary title-btn">${escapeHtml(this.dict.startNight)}</button>
-        <button id="btn-free" class="title-btn">${escapeHtml(this.dict.freePlay)}</button>
+        <button id="btn-night" class="primary title-btn">${ICONS.moon}<span>${escapeHtml(this.dict.startNight)}</span></button>
+        <button id="btn-free" class="title-btn">${ICONS.flask}<span>${escapeHtml(this.dict.freePlay)}</span></button>
       </div>
       <div class="title-small">
-        <button id="btn-title-book" class="mini-btn">📖 ${escapeHtml(this.dict.book)}</button>
+        <button id="btn-title-book" class="mini-btn icon-btn">${ICONS.book}<span>${escapeHtml(this.dict.book)}</span></button>
         <button id="btn-title-lang" class="mini-btn">${escapeHtml(this.dict.langBtn)}</button>
       </div>
-      <div class="title-howto">${this.dict.introLines.map((l) => `<p>${escapeHtml(l)}</p>`).join('')}</div>
+      <div class="title-howto">${this.dict.introLines.map((l) => `<p><b>◆</b>${escapeHtml(l)}</p>`).join('')}</div>
     `;
     $('#btn-night').addEventListener('click', () => this.hooks.onStartNight());
     $('#btn-free').addEventListener('click', () => this.hooks.onFreePlay());
@@ -544,7 +571,7 @@ export class UI {
     el.innerHTML = `
       <div class="cust-head">
         <span class="cust-emoji">${v.emoji}</span>
-        <span class="cust-name">${escapeHtml(v.name)}</span>
+        <span class="cust-name serif">${escapeHtml(v.name)}</span>
         <span class="cust-progress">${escapeHtml(v.progress)}</span>
       </div>
       <div class="cust-bubble">${escapeHtml(v.dialogue)}</div>
@@ -562,8 +589,8 @@ export class UI {
   showSummary(rows: SummaryRow[], data: { total: number; grade: string; isRecord: boolean }, onAgainNight: () => void, onHome: () => void) {
     const card = $('#summary-card');
     card.innerHTML = `
-      <h2 class="summary-title">${escapeHtml(this.dict.nightTitle)}</h2>
-      <div class="summary-grade grade-${data.grade}">${data.grade}</div>
+      <h2 class="summary-title serif">${escapeHtml(this.dict.nightTitle)}</h2>
+      <div class="summary-grade serif grade-${data.grade}"><span>${data.grade}</span></div>
       <div class="summary-income">${escapeHtml(this.dict.nightIncome(data.total))}</div>
       ${data.isRecord ? `<div class="summary-record">${escapeHtml(this.dict.newNightRecord)}</div>` : ''}
       <div class="summary-rows">

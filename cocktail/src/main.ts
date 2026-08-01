@@ -368,7 +368,7 @@ function presentVerdict(verdict: Verdict) {
     };
     if (isNew) {
       sfx.discovery();
-      ui.floatText(dict.newDiscovery, true);
+      ui.floatText(`✨ ${dict.newDiscovery}`, true);
       ui.setBookBadge(true);
     }
     sfx.chime(stars);

@@ -294,21 +294,20 @@ export function orderChips(order: Order, lang: Lang): string[] {
   const c = order.constraints;
   if (c.recipeId) {
     const r = RECIPE_BY_ID[c.recipeId];
-    chips.push(`📖 ${zh ? r.zh : r.en}`);
+    chips.push(zh ? `点名 · ${r.zh}` : `Order · ${r.en}`);
     return chips;
   }
-  if (c.alcoholFree) chips.push(zh ? '🚫 无酒精' : '🚫 Zero-proof');
-  const icons: Record<AttrKey, string> = { strength: '🔥', sweet: '🍬', sour: '🍋', bitter: '☕', fizz: '🫧' };
+  if (c.alcoholFree) chips.push(zh ? '无酒精' : 'Zero-proof');
   const names: Record<AttrKey, [string, string]> = {
     strength: ['烈', 'Strong'], sweet: ['甜', 'Sweet'], sour: ['酸', 'Sour'], bitter: ['苦', 'Bitter'], fizz: ['气泡', 'Fizz'],
   };
   for (const k of Object.keys(c.ranges) as AttrKey[]) {
     const [lo, hi] = c.ranges[k]!;
     const nm = zh ? names[k][0] : names[k][1];
-    if (lo >= 4) chips.push(`${icons[k]} ${nm} ↑`);
-    else if (hi <= 4.5) chips.push(`${icons[k]} ${nm} ↓`);
+    if (lo >= 4) chips.push(`${nm} ↑`);
+    else if (hi <= 4.5) chips.push(`${nm} ↓`);
   }
-  if (c.hue) chips.push(zh ? '🎨 红粉色系' : '🎨 Red / pink');
+  if (c.hue) chips.push(zh ? '红粉色系' : 'Red / pink');
   if (c.secretSoberOk) { /* 彩蛋不提示 */ }
   return chips.slice(0, 3);
 }
