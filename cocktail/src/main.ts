@@ -1,7 +1,8 @@
 // ============ 摇摇酒馆 · 入口与游戏状态机 ============
 
 import './style.css';
-import { CAPACITY, ING_BY_ID, type Ing, type Recipe } from './data';
+import { evalOrder, makeNight, orderChips, type Order } from './customers';
+import { CAPACITY, ING_BY_ID, RECIPES, type Ing, type Recipe } from './data';
 import {
   addPour, applyMuddle, applyShake, applyStir, computeAttrs, createMix, ingColorCss,
   judge, pourAmountOf, sprayVerdict, totalVol, willSpray,
@@ -18,6 +19,18 @@ let dict: Dict = DICTS[save.lang];
 
 let mix: MixState = createMix();
 let mode: Mode = 'idle';
+
+// 游戏模式：首页 / 随心调 / 营业
+type GameMode = 'title' | 'sandbox' | 'night';
+let gameMode: GameMode = 'title';
+const NIGHT_CUSTOMERS = 6;
+let night = {
+  orders: [] as Order[],
+  idx: 0,
+  total: 0,
+  scores: [] as number[],
+  rows: [] as { emoji: string; name: string; tip: number }[],
+};
 
 // 倒酒
 let pouring: { ing: Ing; warned: boolean } | null = null;
@@ -63,7 +76,10 @@ const ui = new UI(dict, {
   onMuteToggle() { save.muted = !save.muted; sfx.setMuted(save.muted); ui.setMuted(save.muted); persist(save); },
   onMeasureToggle() { save.measure = !save.measure; ui.setMeasure(save.measure); ui.toast(save.measure ? dict.measureOn : dict.measureOff); persist(save); },
   onOpenBook() { openBook(); },
-  onAgain() { ui.hideResult(); resetMix(); ui.setMade(save.made + 1); },
+  onAgain() { ui.hideResult(); afterResult(); },
+  onHome() { goHome(); },
+  onStartNight() { startNight(); },
+  onFreePlay() { startFree(); },
 });
 
 const scene = new Scene(ui.stage);
@@ -103,10 +119,11 @@ function toggleLang() {
   persist(save);
   ui.setDict(dict);
   ui.refreshLabels(save.muted, save.measure);
-  ui.setMade(save.made + 1);
   ui.setIceLabel(mix.ice);
   updateAmounts();
-  if (ui.introVisible()) showIntro();
+  refreshStatus();
+  if (ui.titleVisible()) ui.showTitle(titleStats());
+  if (gameMode === 'night' && night.idx < night.orders.length) showCurrentCustomer();
   syncInset();
 }
 
@@ -324,7 +341,6 @@ function serve() {
 function presentVerdict(verdict: Verdict) {
   if (verdict.kind === 'empty') return;
   save.made++;
-  ui.setMade(save.made);
 
   let view: ResultView;
   if (verdict.kind === 'classic') {
@@ -409,8 +425,43 @@ function presentVerdict(verdict: Verdict) {
     };
     if (isNew) ui.setBookBadge(true);
   }
+
+  // 营业模式：客人品尝 → 反应 + 小费
+  if (gameMode === 'night' && night.idx < night.orders.length) {
+    const order = night.orders[night.idx];
+    const res = evalOrder(order, verdict, save.lang);
+    save.money += res.tip;
+    night.total += res.tip;
+    night.scores.push(res.score);
+    const custName = save.lang === 'zh' ? order.type.name.zh : order.type.name.en;
+    night.rows.push({ emoji: order.type.emoji, name: custName, tip: res.tip });
+    view.reaction = {
+      emoji: order.type.emoji,
+      name: custName,
+      line: save.lang === 'zh' ? res.reaction.zh : res.reaction.en,
+      tipText: res.tip > 0 ? dict.tipGain(res.tip) : dict.noTip,
+      tier: res.tier,
+      secretTag: res.secretHit ? dict.secretTag : undefined,
+    };
+    view.primaryLabel = night.idx >= night.orders.length - 1 ? dict.closeNight : dict.nextCustomer;
+    if (res.tier === 'great' && verdict.kind !== 'classic') sfx.chime(3);
+    else if (res.tier === 'bad' && verdict.kind !== 'disaster') sfx.wah();
+    refreshStatus();
+  }
+
   persist(save);
   ui.showResult(view);
+}
+
+/** 结果页主按钮之后的流程：随心调=再来一杯；营业=下一位/打烊 */
+function afterResult() {
+  resetMix();
+  if (gameMode === 'night') {
+    night.idx++;
+    if (night.idx >= night.orders.length) { endNight(); return; }
+    showCurrentCustomer();
+  }
+  refreshStatus();
 }
 
 // ---------------- 图鉴 ----------------
@@ -434,16 +485,85 @@ function openBook() {
   ui.showBook(save);
 }
 
-// ---------------- 引导 ----------------
+// ---------------- 模式切换 ----------------
 
-function showIntro() {
-  ui.showIntro(() => {
-    save.seenIntro = true;
-    persist(save);
-    ui.hideIntro();
-    firstGesture();
-    syncInset();
+function titleStats() {
+  return { money: save.money, nights: save.nights, discovered: Object.keys(save.classics).length, total: RECIPES.length };
+}
+
+function goHome() {
+  if (mode !== 'idle') exitMode();
+  gameMode = 'title';
+  resetMix();
+  ui.hideCustomer();
+  ui.hideResult();
+  ui.hideSummary();
+  ui.setHomeVisible(false);
+  ui.setStatus('');
+  ui.showTitle(titleStats());
+}
+
+function startNight() {
+  firstGesture();
+  gameMode = 'night';
+  ui.hideTitle();
+  ui.hideSummary();
+  ui.setHomeVisible(true);
+  resetMix();
+  night = { orders: makeNight(NIGHT_CUSTOMERS, Object.keys(save.classics)), idx: 0, total: 0, scores: [], rows: [] };
+  showCurrentCustomer();
+  refreshStatus();
+  syncInset();
+}
+
+function startFree() {
+  firstGesture();
+  gameMode = 'sandbox';
+  ui.hideTitle();
+  ui.hideSummary();
+  ui.hideCustomer();
+  ui.setHomeVisible(true);
+  resetMix();
+  refreshStatus();
+  syncInset();
+}
+
+function showCurrentCustomer() {
+  const order = night.orders[night.idx];
+  if (!order) return;
+  const zh = save.lang === 'zh';
+  ui.showCustomer({
+    emoji: order.type.emoji,
+    name: zh ? order.type.name.zh : order.type.name.en,
+    progress: dict.custProgress(night.idx + 1, night.orders.length),
+    dialogue: zh ? order.dialogue.zh : order.dialogue.en,
+    hint: order.hint ? (zh ? order.hint.zh : order.hint.en) : undefined,
+    chips: orderChips(order, save.lang),
   });
+}
+
+function refreshStatus() {
+  if (gameMode === 'night') {
+    ui.setStatus(`${dict.nightMoney(night.total)}`);
+  } else if (gameMode === 'sandbox') {
+    ui.setStatus(dict.statMade(save.made + 1));
+  } else {
+    ui.setStatus('');
+  }
+}
+
+function endNight() {
+  ui.hideCustomer();
+  const avg = night.scores.length ? night.scores.reduce((a, b) => a + b, 0) / night.scores.length : 0;
+  const grade = avg >= 85 ? 'S' : avg >= 70 ? 'A' : avg >= 55 ? 'B' : 'C';
+  const isRecord = night.total > save.bestNight && night.total > 0;
+  if (isRecord) save.bestNight = night.total;
+  save.nights++;
+  persist(save);
+  sfx.chime(grade === 'S' ? 4 : grade === 'A' ? 3 : 2);
+  ui.showSummary(night.rows, { total: night.total, grade, isRecord },
+    () => { ui.hideSummary(); startNight(); },
+    () => goHome());
 }
 
 // ---------------- 主循环 ----------------
@@ -510,10 +630,9 @@ function loop(now: number) {
 // ---------------- 启动 ----------------
 
 ui.refreshLabels(save.muted, save.measure);
-ui.setMade(save.made + 1);
 ui.setIceLabel(mix.ice);
 updateAmounts();
 syncInset();
 window.setTimeout(syncInset, 120);
-if (!save.seenIntro) showIntro();
+goHome();
 requestAnimationFrame(loop);

@@ -19,7 +19,11 @@ export interface UIHooks {
   onMuteToggle(): void;
   onMeasureToggle(): void;
   onOpenBook(): void;
+  /** 结果页主按钮（再调一杯 / 下一位客人 / 打烊结算） */
   onAgain(): void;
+  onHome(): void;
+  onStartNight(): void;
+  onFreePlay(): void;
 }
 
 export type GarnishKind = 'none' | 'mint' | 'citrus' | 'cherry' | 'olive';
@@ -38,7 +42,29 @@ export interface ResultView {
   abvText: string;
   lines: string[];
   footNote: string;
+  /** 营业模式：客人反应区 */
+  reaction?: {
+    emoji: string;
+    name: string;
+    line: string;
+    tipText: string;
+    tier: 'great' | 'ok' | 'bad';
+    secretTag?: string;
+  };
+  /** 结果页主按钮文案（默认"再调一杯"） */
+  primaryLabel?: string;
 }
+
+export interface CustomerView {
+  emoji: string;
+  name: string;
+  progress: string;
+  dialogue: string;
+  hint?: string;
+  chips: string[];
+}
+
+export interface SummaryRow { emoji: string; name: string; tip: number }
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 
@@ -61,7 +87,10 @@ export class UI {
     app.innerHTML = `
       <canvas id="stage"></canvas>
       <div id="topbar">
-        <div id="made" class="chip"></div>
+        <div class="tb-left">
+          <button id="btn-home" class="chip btn hidden">🏠</button>
+          <div id="made" class="chip"></div>
+        </div>
         <div class="tb-btns">
           <button id="btn-measure" class="chip btn" title="jigger"></button>
           <button id="btn-mute" class="chip btn"></button>
@@ -69,6 +98,7 @@ export class UI {
           <button id="btn-book" class="chip btn btn-book"></button>
         </div>
       </div>
+      <div id="customer" class="hidden"></div>
       <div id="mode-hint" class="hidden">
         <span id="mode-hint-text"></span>
         <button id="btn-motion" class="mini-btn hidden"></button>
@@ -83,8 +113,11 @@ export class UI {
       </div>
       <div id="modal-result" class="modal hidden"><div class="card" id="result-card"></div></div>
       <div id="modal-book" class="modal hidden"><div class="card book-card" id="book-card"></div></div>
+      <div id="modal-summary" class="modal hidden"><div class="card summary-card" id="summary-card"></div></div>
+      <div id="title" class="modal title-modal hidden"><div class="title-card" id="title-card"></div></div>
       <div id="intro" class="modal hidden"><div class="card intro-card" id="intro-card"></div></div>
     `;
+    $('#btn-home').addEventListener('click', () => this.hooks.onHome());
     $('#btn-lang').addEventListener('click', () => this.hooks.onLangToggle());
     $('#btn-mute').addEventListener('click', () => this.hooks.onMuteToggle());
     $('#btn-measure').addEventListener('click', () => this.hooks.onMeasureToggle());
@@ -248,13 +281,17 @@ export class UI {
     const hint = $('#mode-hint');
     const text = $('#mode-hint-text');
     hint.classList.remove('hidden');
+    $('#customer').classList.add('dim');
     text.textContent = mode === 'stir' ? this.dict.stirHint : mode === 'shake' ? this.dict.shakeHint : this.dict.muddleHint;
     const mb = $('#btn-motion');
     mb.textContent = this.dict.shakeMotionBtn;
     mb.classList.toggle('hidden', !(mode === 'shake' && motionAvailable));
     $('#btn-cancel').textContent = this.dict.cancel;
   }
-  hideModeHint() { $('#mode-hint').classList.add('hidden'); }
+  hideModeHint() {
+    $('#mode-hint').classList.add('hidden');
+    $('#customer').classList.remove('dim');
+  }
   hideMotionBtn() { $('#btn-motion').classList.add('hidden'); }
 
   // ---------------- 倒酒读数 / 提示 ----------------
@@ -300,6 +337,14 @@ export class UI {
           <span class="attr-bar"><i style="width:${Math.round(a * 10)}%"></i></span>
         </div>`)
       .join('');
+    const reactionHtml = v.reaction ? `
+      <div class="reaction reaction-${v.reaction.tier}">
+        <div class="reaction-head"><span class="reaction-emoji">${v.reaction.emoji}</span>
+          <span class="reaction-name">${escapeHtml(v.reaction.name)}</span>
+          <span class="reaction-tip">${escapeHtml(v.reaction.tipText)}</span></div>
+        <div class="reaction-line">"${escapeHtml(v.reaction.line)}"</div>
+        ${v.reaction.secretTag ? `<div class="reaction-secret">${escapeHtml(v.reaction.secretTag)}</div>` : ''}
+      </div>` : '';
     card.innerHTML = `
       <div class="badge badge-${v.badgeKind}">${v.badge}</div>
       <h2 class="drink-name">${v.emoji ?? ''} ${escapeHtml(v.name)}</h2>
@@ -312,9 +357,10 @@ export class UI {
         </div>
       </div>
       <div class="result-lines">${v.lines.map((l) => `<p>${escapeHtml(l)}</p>`).join('')}</div>
+      ${reactionHtml}
       <div class="footnote">${escapeHtml(v.footNote)}</div>
       <div class="btn-row">
-        <button id="btn-again" class="primary">${this.dict.again}</button>
+        <button id="btn-again" class="primary">${escapeHtml(v.primaryLabel ?? this.dict.again)}</button>
         <button id="btn-result-book">${this.dict.openBook}</button>
       </div>
     `;
@@ -454,6 +500,90 @@ export class UI {
       body.prepend(tip);
     }
   }
+
+  // ---------------- 首页 ----------------
+
+  showTitle(stats: { money: number; nights: number; discovered: number; total: number }) {
+    const card = $('#title-card');
+    card.innerHTML = `
+      <div class="title-neon">🍸</div>
+      <h1 class="title-logo">${escapeHtml(this.dict.barName)}</h1>
+      <p class="title-tagline">${escapeHtml(this.dict.tagline)}</p>
+      <div class="title-stats">
+        <span>${escapeHtml(this.dict.totalTips(stats.money))}</span>
+        <span>${escapeHtml(this.dict.nightsPlayed(stats.nights))}</span>
+        <span>${escapeHtml(this.dict.discoveredShort(stats.discovered, stats.total))}</span>
+      </div>
+      <div class="title-btns">
+        <button id="btn-night" class="primary title-btn">${escapeHtml(this.dict.startNight)}</button>
+        <button id="btn-free" class="title-btn">${escapeHtml(this.dict.freePlay)}</button>
+      </div>
+      <div class="title-small">
+        <button id="btn-title-book" class="mini-btn">📖 ${escapeHtml(this.dict.book)}</button>
+        <button id="btn-title-lang" class="mini-btn">${escapeHtml(this.dict.langBtn)}</button>
+      </div>
+      <div class="title-howto">${this.dict.introLines.map((l) => `<p>${escapeHtml(l)}</p>`).join('')}</div>
+    `;
+    $('#btn-night').addEventListener('click', () => this.hooks.onStartNight());
+    $('#btn-free').addEventListener('click', () => this.hooks.onFreePlay());
+    $('#btn-title-book').addEventListener('click', () => this.hooks.onOpenBook());
+    $('#btn-title-lang').addEventListener('click', () => this.hooks.onLangToggle());
+    $('#title').classList.remove('hidden');
+  }
+  hideTitle() { $('#title').classList.add('hidden'); }
+  titleVisible(): boolean { return !$('#title').classList.contains('hidden'); }
+
+  setHomeVisible(on: boolean) { $('#btn-home').classList.toggle('hidden', !on); }
+  setStatus(text: string) { $('#made').textContent = text; }
+
+  // ---------------- 客人点单卡 ----------------
+
+  showCustomer(v: CustomerView) {
+    const el = $('#customer');
+    el.classList.remove('hidden');
+    el.innerHTML = `
+      <div class="cust-head">
+        <span class="cust-emoji">${v.emoji}</span>
+        <span class="cust-name">${escapeHtml(v.name)}</span>
+        <span class="cust-progress">${escapeHtml(v.progress)}</span>
+      </div>
+      <div class="cust-bubble">${escapeHtml(v.dialogue)}</div>
+      ${v.hint ? `<div class="cust-hint">${escapeHtml(v.hint)}</div>` : ''}
+      ${v.chips.length ? `<div class="cust-chips">${v.chips.map((c) => `<span class="cust-chip">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
+    `;
+    el.classList.remove('pop-in');
+    void el.offsetWidth;
+    el.classList.add('pop-in');
+  }
+  hideCustomer() { $('#customer').classList.add('hidden'); }
+
+  // ---------------- 打烊结算 ----------------
+
+  showSummary(rows: SummaryRow[], data: { total: number; grade: string; isRecord: boolean }, onAgainNight: () => void, onHome: () => void) {
+    const card = $('#summary-card');
+    card.innerHTML = `
+      <h2 class="summary-title">${escapeHtml(this.dict.nightTitle)}</h2>
+      <div class="summary-grade grade-${data.grade}">${data.grade}</div>
+      <div class="summary-income">${escapeHtml(this.dict.nightIncome(data.total))}</div>
+      ${data.isRecord ? `<div class="summary-record">${escapeHtml(this.dict.newNightRecord)}</div>` : ''}
+      <div class="summary-rows">
+        ${rows.map((r) => `
+          <div class="summary-row">
+            <span class="sr-emoji">${r.emoji}</span>
+            <span class="sr-name">${escapeHtml(r.name)}</span>
+            <span class="sr-tip${r.tip > 0 ? ' good' : ''}">${r.tip > 0 ? '+' + r.tip : '0'}</span>
+          </div>`).join('')}
+      </div>
+      <div class="btn-row">
+        <button id="btn-night-again" class="primary">${escapeHtml(this.dict.nightAgain)}</button>
+        <button id="btn-summary-home">${escapeHtml(this.dict.backHome)}</button>
+      </div>
+    `;
+    $('#btn-night-again').addEventListener('click', onAgainNight);
+    $('#btn-summary-home').addEventListener('click', onHome);
+    $('#modal-summary').classList.remove('hidden');
+  }
+  hideSummary() { $('#modal-summary').classList.add('hidden'); }
 
   // ---------------- 引导 ----------------
   showIntro(onStart: () => void) {

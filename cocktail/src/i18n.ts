@@ -76,6 +76,27 @@ export interface Dict {
   introTitle: string;
   introLines: string[];
   introStart: string;
+  // 首页 & 模式
+  tagline: string;
+  startNight: string;
+  freePlay: string;
+  totalTips: (n: number) => string;
+  nightsPlayed: (n: number) => string;
+  discoveredShort: (n: number, total: number) => string;
+  // 营业模式
+  custProgress: (i: number, n: number) => string;
+  nightMoney: (n: number) => string;
+  nextCustomer: string;
+  closeNight: string;
+  tipGain: (n: number) => string;
+  noTip: string;
+  secretTag: string;
+  nightTitle: string;
+  nightIncome: (n: number) => string;
+  gradeText: (g: string) => string;
+  nightAgain: string;
+  backHome: string;
+  newNightRecord: string;
   // 杂项
   statMade: (n: number) => string;
   measureOn: string;
@@ -161,6 +182,25 @@ export const DICTS: Record<Lang, Dict> = {
       '📖 调中经典鸡尾酒会解锁酒谱；调出怪东西……也会被记住',
     ],
     introStart: '开始调酒',
+    tagline: '深夜雨窗下的小酒馆。客人点的不是酒名，是心情。',
+    startNight: '🌙 开始营业',
+    freePlay: '🧪 随心调',
+    totalTips: (n) => `累计小费 ¥${n}`,
+    nightsPlayed: (n) => `营业 ${n} 晚`,
+    discoveredShort: (n, total) => `酒谱 ${n}/${total}`,
+    custProgress: (i, n) => `第 ${i}/${n} 位客人`,
+    nightMoney: (n) => `今晚 ¥${n}`,
+    nextCustomer: '下一位客人',
+    closeNight: '打烊结算',
+    tipGain: (n) => `小费 +¥${n}`,
+    noTip: '没有小费……',
+    secretTag: '🤫 善意的谎言，小费加倍',
+    nightTitle: '🌙 今夜打烊',
+    nightIncome: (n) => `今晚收入 ¥${n}`,
+    gradeText: (g) => `本晚评级 ${g}`,
+    nightAgain: '再营业一晚',
+    backHome: '回首页',
+    newNightRecord: '🎉 单晚新纪录！',
     statMade: (n) => `第 ${n} 杯`,
     measureOn: '量酒器：开',
     measureOff: '量酒器：关（凭手感！）',
@@ -243,6 +283,25 @@ export const DICTS: Record<Lang, Dict> = {
       '📖 Nail a classic to unlock it; mix something weird… and it will be remembered too',
     ],
     introStart: 'Start Mixing',
+    tagline: 'A tiny bar behind a rainy window. Customers order moods, not names.',
+    startNight: '🌙 Open the Bar',
+    freePlay: '🧪 Free Mix',
+    totalTips: (n) => `Tips earned $${n}`,
+    nightsPlayed: (n) => `${n} nights open`,
+    discoveredShort: (n, total) => `Recipes ${n}/${total}`,
+    custProgress: (i, n) => `Customer ${i}/${n}`,
+    nightMoney: (n) => `Tonight $${n}`,
+    nextCustomer: 'Next Customer',
+    closeNight: 'Close Up',
+    tipGain: (n) => `Tip +$${n}`,
+    noTip: 'No tip…',
+    secretTag: '🤫 A kind lie — double tip',
+    nightTitle: '🌙 Closing Time',
+    nightIncome: (n) => `Tonight's take: $${n}`,
+    gradeText: (g) => `Night grade: ${g}`,
+    nightAgain: 'Open Another Night',
+    backHome: 'Home',
+    newNightRecord: '🎉 New single-night record!',
     statMade: (n) => `Drink #${n}`,
     measureOn: 'Jigger: ON',
     measureOff: 'Jigger: OFF (free pour!)',

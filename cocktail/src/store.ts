@@ -18,6 +18,9 @@ export interface SaveData {
   measure: boolean;
   seenIntro: boolean;
   made: number;
+  money: number;
+  nights: number;
+  bestNight: number;
   classics: Record<string, { stars: number }>;
   creations: CreationRecord[];
   disasters: Record<string, boolean>;
@@ -28,6 +31,7 @@ const KEY = 'yaoyao-bar-save-v1';
 export function loadSave(): SaveData {
   const fallback: SaveData = {
     lang: 'zh', muted: false, measure: true, seenIntro: false, made: 0,
+    money: 0, nights: 0, bestNight: 0,
     classics: {}, creations: [], disasters: {},
   };
   try {
@@ -40,6 +44,9 @@ export function loadSave(): SaveData {
       measure: d.measure !== false,
       seenIntro: !!d.seenIntro,
       made: d.made | 0,
+      money: d.money | 0,
+      nights: d.nights | 0,
+      bestNight: d.bestNight | 0,
       classics: d.classics ?? {},
       creations: Array.isArray(d.creations) ? d.creations : [],
       disasters: d.disasters ?? {},
