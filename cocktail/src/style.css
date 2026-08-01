@@ -197,7 +197,7 @@ button.chip.off::after { content: '×'; font-size: 11px; color: var(--red); }
 
 #actions {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
   transition: opacity 0.2s;
 }
@@ -317,6 +317,8 @@ button.chip.off::after { content: '×'; font-size: 11px; color: var(--red); }
   justify-content: center;
 }
 .glyph-leaf::before, .glyph-leaf::after { display: none; }
+.glyph-dash { width: 15px; height: 30px; margin-top: 16px; }
+.glyph-dash::after { top: 36%; height: 9px; }
 .bottle-name { font-size: 12px; line-height: 1.15; text-align: center; white-space: nowrap; }
 .bottle-amt { font-size: 11px; color: var(--dim); min-height: 13px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .bottle-amt.has { color: var(--gold); }

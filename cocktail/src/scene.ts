@@ -3,7 +3,7 @@
 import { CAPACITY } from './data';
 import type { IceType, Layer } from './engine';
 
-export type Mode = 'idle' | 'stir' | 'shake' | 'muddle';
+export type Mode = 'idle' | 'stir' | 'shake';
 
 export interface SceneState {
   mode: Mode;
@@ -18,7 +18,6 @@ export interface SceneState {
   stirProgress: number;
   shakeProgress: number;
   shakeOffset: number;
-  muddlePress: number; // 0~1 捣下去的程度
   neonText: string;
 }
 
@@ -50,7 +49,6 @@ export class Scene {
   private cond: CondDrop[] = [];
   private surfaceAmp = 0;
   private shakeMag = 0;
-  private pestleAnim = 0;
   private t = 0;
   private winCache: { lights: { x: number; y: number }[]; buildings: { x: number; w: number; h: number }[] } | null = null;
 
@@ -83,7 +81,6 @@ export class Scene {
   // -------- 外部特效钩子 --------
   kickSurface(v = 6) { this.surfaceAmp = Math.min(10, this.surfaceAmp + v); }
   screenShake(mag = 6) { this.shakeMag = Math.max(this.shakeMag, mag); }
-  pestleHit() { this.pestleAnim = 1; }
 
   splash(color: string) {
     const g = this.glass();
@@ -149,7 +146,6 @@ export class Scene {
     } else this.shakeMag = 0;
 
     this.surfaceAmp = Math.max(0, this.surfaceAmp - dt * 7);
-    this.pestleAnim = Math.max(0, this.pestleAnim - dt * 5);
     this.lastVol = this.totalVol(s.layers);
 
     this.drawRoom();
@@ -165,7 +161,6 @@ export class Scene {
       this.drawGlassAndLiquid(g, s, dt);
       if (s.pourColor) this.drawPourStream(g, s.pourColor);
       if (s.mode === 'stir') this.drawSpoon(g, s);
-      if (s.mode === 'muddle') this.drawPestle(g, s);
     }
 
     this.drawParticles(dt);
@@ -744,23 +739,6 @@ export class Scene {
     this.drawProgressRing(g.cx, g.top - 40, s.stirProgress, '#eed9a6');
   }
 
-  private drawPestle(g: GlassGeom, s: SceneState) {
-    const { ctx } = this;
-    const press = this.pestleAnim;
-    const topY = this.liquidTopY(g);
-    const py = g.top - 46 + press * (topY - g.top + 46);
-    ctx.save();
-    ctx.translate(g.cx, py);
-    ctx.fillStyle = '#a5764e';
-    this.roundRectPath(-6, -54, 12, 54, 5);
-    ctx.fill();
-    ctx.fillStyle = '#8a5f3d';
-    ctx.beginPath();
-    ctx.ellipse(0, 2, 11, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-    this.drawProgressRing(g.cx, g.top - 70, s.muddlePress, '#eed9a6');
-  }
 
   private drawProgressRing(x: number, y: number, p: number, color: string) {
     if (p <= 0) return;

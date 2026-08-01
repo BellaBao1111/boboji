@@ -1,9 +1,9 @@
 // ============ 数据层：材料 / 配方 / 词库 / 灾难 ============
 
 export type Cat = 'spirit' | 'liqueur' | 'mixer' | 'other';
-export type Unit = 'ml' | 'leaf';
+export type Unit = 'ml' | 'leaf' | 'dash';
 export type Tech = 'build' | 'stir' | 'shake';
-export type IceReq = 'cube' | 'none' | 'any';
+export type IceReq = 'cube' | 'crushed' | 'none' | 'any';
 
 export interface Ing {
   id: string;
@@ -69,7 +69,9 @@ export const INGREDIENTS: Ing[] = [
   ing({ id: 'grenadine', zh: '红石榴糖浆', en: 'Grenadine', cat: 'other', color: '#c2183c', opacity: 0.88, abv: 0, sweet: 9, sour: 0, bitter: 0, fizz: 0, density: 1.18, unit: 'ml', rate: 22,
     noteZh: '艳红的甜糖浆，密度大会沉底——日出的秘密', noteEn: 'Ruby-red and dense — it sinks. The sunrise secret' }),
   ing({ id: 'mint',      zh: '薄荷叶', en: 'Mint',       cat: 'other', color: '#3f9e63', opacity: 1.0, abv: 0, sweet: 0, sour: 0, bitter: 0, fizz: 0, density: 0.5, unit: 'leaf', rate: 0, tag: 'mint',
-    noteZh: '点几片进杯，捣过才有香气', noteEn: 'Tap to add leaves — muddle to release the aroma' }),
+    noteZh: '点几片进杯，清凉香气；放太多就是牙膏水', noteEn: 'Tap to add leaves — cool aroma; too many = toothpaste' }),
+  ing({ id: 'bitters',   zh: '苦精',   en: 'Bitters',    cat: 'other', color: '#6b3226', opacity: 0.9, abv: 0.44, sweet: 0, sour: 0, bitter: 10, fizz: 0, density: 1.05, unit: 'dash', rate: 0,
+    noteZh: '按滴算的浓缩苦味：两滴画龙点睛，六滴变老中医', noteEn: 'Counted in dashes: two perfect a drink, six make medicine' }),
 ];
 
 export const ING_BY_ID: Record<string, Ing> = Object.fromEntries(INGREDIENTS.map((i) => [i.id, i]));
@@ -92,8 +94,6 @@ export interface Recipe {
   tech: Tech[];
   /** 建议用冰（图鉴展示） */
   ice: IceReq;
-  /** 需要捣过（薄荷类） */
-  muddle?: boolean;
   /** 必须保持分层（搅/摇会毁掉它） */
   keepLayers?: boolean;
   alcoholFree?: boolean;
@@ -114,6 +114,13 @@ export const RECIPES: Recipe[] = [
     loreEn: 'Quinine medicine rescued by gin into immortality.',
   }),
   r({
+    id: 'highball', zh: '威士忌高球', en: 'Whisky Highball', glass: 'highball',
+    items: [{ id: 'whisky', amount: 45 }, { id: 'soda', amount: 110 }],
+    tech: ['build'], ice: 'cube',
+    loreZh: '日本居酒屋的灵魂：气泡把威士忌吹得轻盈。',
+    loreEn: 'Soul of the izakaya — bubbles make whisky weightless.',
+  }),
+  r({
     id: 'cubalibre', zh: '自由古巴', en: 'Cuba Libre', glass: 'highball',
     items: [{ id: 'rum', amount: 45 }, { id: 'cola', amount: 110 }, { id: 'lime', amount: 10 }],
     tech: ['build'], ice: 'cube',
@@ -130,16 +137,23 @@ export const RECIPES: Recipe[] = [
   r({
     id: 'mojito', zh: '莫吉托', en: 'Mojito', glass: 'highball',
     items: [{ id: 'rum', amount: 45 }, { id: 'lime', amount: 20 }, { id: 'syrup', amount: 15 }, { id: 'soda', amount: 80 }, { id: 'mint', amount: 4 }],
-    tech: ['build'], ice: 'cube', muddle: true,
-    loreZh: '薄荷要捣不要切，香气是拍出来的。',
-    loreEn: 'Muddle, don\'t chop — aroma is coaxed, not forced.',
+    tech: ['build'], ice: 'any',
+    loreZh: '古巴的国民饮品：薄荷、青柠和气泡凑成的假日。',
+    loreEn: "Cuba's national refresher — mint, lime and bubbles on holiday.",
   }),
   r({
     id: 'virginmojito', zh: '无酒精莫吉托', en: 'Virgin Mojito', glass: 'highball',
     items: [{ id: 'lime', amount: 25 }, { id: 'syrup', amount: 20 }, { id: 'soda', amount: 110 }, { id: 'mint', amount: 4 }],
-    tech: ['build'], ice: 'cube', muddle: true, alcoholFree: true,
+    tech: ['build'], ice: 'cube', alcoholFree: true,
     loreZh: '不喝酒的人也值得一杯像样的鸡尾酒。',
     loreEn: 'Teetotalers deserve a proper cocktail too.',
+  }),
+  r({
+    id: 'mintjulep', zh: '薄荷朱利普', en: 'Mint Julep', glass: 'rocks',
+    items: [{ id: 'whisky', amount: 60 }, { id: 'syrup', amount: 10 }, { id: 'mint', amount: 6 }],
+    tech: ['build', 'stir'], ice: 'crushed',
+    loreZh: '肯塔基赛马场的官方饮品，一年要喝掉十二万杯。',
+    loreEn: 'Official drink of the Kentucky Derby — 120,000 cups a year.',
   }),
   r({
     id: 'daiquiri', zh: '大吉利', en: 'Daiquiri', glass: 'martini',
@@ -154,6 +168,13 @@ export const RECIPES: Recipe[] = [
     tech: ['shake'], ice: 'none',
     loreZh: '钱德勒笔下的马洛说：真正的吉姆雷特是金酒加青柠。',
     loreEn: 'Chandler\'s Marlowe: a real gimlet is gin and lime.',
+  }),
+  r({
+    id: 'kamikaze', zh: '神风特攻', en: 'Kamikaze', glass: 'martini',
+    items: [{ id: 'vodka', amount: 30 }, { id: 'triplesec', amount: 30 }, { id: 'lime', amount: 30 }],
+    tech: ['shake'], ice: 'none',
+    loreZh: '三等分的凛冽酸爽，名字比酒烈，酒比名字好喝。',
+    loreEn: 'Equal parts, ice-cold and sharp. Louder name, nicer drink.',
   }),
   r({
     id: 'margarita', zh: '玛格丽特', en: 'Margarita', glass: 'martini',
@@ -175,6 +196,13 @@ export const RECIPES: Recipe[] = [
     tech: ['build'], ice: 'cube', keepLayers: true,
     loreZh: '红石榴糖浆慢慢沉下去，才有朝霞的渐变。千万别搅。',
     loreEn: 'Let the grenadine sink — that\'s your dawn gradient. Never stir.',
+  }),
+  r({
+    id: 'garibaldi', zh: '加里波第', en: 'Garibaldi', glass: 'highball',
+    items: [{ id: 'campari', amount: 60 }, { id: 'oj', amount: 90 }],
+    tech: ['build'], ice: 'cube',
+    loreZh: '以统一意大利的将军命名：北方的金巴利，南方的橙子。',
+    loreEn: 'Named for the general who unified Italy: northern Campari, southern oranges.',
   }),
   r({
     id: 'liit', zh: '长岛冰茶', en: 'Long Island Iced Tea', glass: 'highball',
@@ -202,6 +230,20 @@ export const RECIPES: Recipe[] = [
     loreEn: 'The Negroni\'s gentler ancestor, bitterness softened by fizz.',
   }),
   r({
+    id: 'manhattan', zh: '曼哈顿', en: 'Manhattan', glass: 'martini',
+    items: [{ id: 'whisky', amount: 55 }, { id: 'svermouth', amount: 25 }, { id: 'bitters', amount: 2 }],
+    tech: ['stir'], ice: 'none',
+    loreZh: '鸡尾酒里的老绅士：威士忌、红味美思，和两滴神秘的苦。',
+    loreEn: 'The old gentleman: whisky, red vermouth, two dashes of mystery.',
+  }),
+  r({
+    id: 'oldfashioned', zh: '古典鸡尾酒', en: 'Old Fashioned', glass: 'rocks',
+    items: [{ id: 'whisky', amount: 55 }, { id: 'syrup', amount: 10 }, { id: 'bitters', amount: 2 }],
+    tech: ['stir'], ice: 'cube',
+    loreZh: '名字就叫"老派"：糖、苦精、威士忌，慢慢搅。',
+    loreEn: 'Literally "old-fashioned": sugar, bitters, whisky, stirred slow.',
+  }),
+  r({
     id: 'shirley', zh: '秀兰·邓波儿', en: 'Shirley Temple', glass: 'highball',
     items: [{ id: 'soda', amount: 110 }, { id: 'grenadine', amount: 20 }],
     tech: ['build'], ice: 'cube', alcoholFree: true,
@@ -215,7 +257,7 @@ export const RECIPE_BY_ID: Record<string, Recipe> = Object.fromEntries(RECIPES.m
 // ---------------- 灾难 ----------------
 
 export interface Disaster {
-  id: 'spray' | 'donkey' | 'sugarbomb' | 'toothpaste';
+  id: 'spray' | 'donkey' | 'sugarbomb' | 'toothpaste' | 'herbal';
   emoji: string;
   zh: string; en: string;
   descZh: string; descEn: string;
@@ -228,6 +270,8 @@ export const DISASTERS: Disaster[] = [
     descZh: '一杯下去，驴都得扶墙走。客人已被保安抬出。', descEn: 'One sip would floor a donkey. The customer left horizontally.' },
   { id: 'sugarbomb', emoji: '🍭', zh: '齁死人', en: 'Sugar Bomb',
     descZh: '甜度超标三倍。客人喝完当场预约了牙医。', descEn: 'Triple the legal sweetness. The customer booked a dentist on the spot.' },
+  { id: 'herbal', emoji: '🧪', zh: '老中医', en: 'Herbal Doctor',
+    descZh: '苦精是按"滴"算的朋友……这杯建议饭后温服，一日三次。', descEn: 'Bitters come in dashes, friend. Take warm, thrice daily, after meals.' },
   { id: 'toothpaste', emoji: '🪥', zh: '牙膏水', en: 'Toothpaste Water',
     descZh: '薄荷放太多了。清新是很清新，就是像在喝漱口水。', descEn: 'Way too much mint. Refreshing, sure — like drinking mouthwash.' },
 ];

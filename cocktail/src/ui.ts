@@ -6,7 +6,7 @@ import type { IceType } from './engine';
 import type { Dict, Lang } from './i18n';
 import type { SaveData } from './store';
 
-export type ActionId = 'ice' | 'muddle' | 'stir' | 'shake' | 'serve' | 'dump';
+export type ActionId = 'ice' | 'stir' | 'shake' | 'serve' | 'dump';
 
 export interface UIHooks {
   onPourStart(ing: Ing): void;
@@ -190,6 +190,9 @@ export class UI {
     if (ing.unit === 'leaf') {
       glyph.classList.add('glyph-leaf');
       glyph.textContent = '🌿';
+    } else if (ing.unit === 'dash') {
+      glyph.classList.add('glyph-dash');
+      glyph.style.setProperty('--c', ing.color);
     } else {
       glyph.style.setProperty('--c', ing.color);
       if (ing.cat === 'mixer') glyph.classList.add('glyph-tall');
@@ -265,7 +268,8 @@ export class UI {
       const v = map.get(id) ?? 0;
       if (v <= 0) { el.textContent = ''; el.classList.remove('has'); return; }
       el.classList.add('has');
-      el.textContent = ing.unit === 'ml' ? this.dict.mlSuffix(Math.round(v)) : this.dict.leafSuffix(v);
+      el.textContent = ing.unit === 'ml' ? this.dict.mlSuffix(Math.round(v))
+        : ing.unit === 'dash' ? this.dict.dashSuffix(v) : this.dict.leafSuffix(v);
     });
   }
 
@@ -279,7 +283,6 @@ export class UI {
     bar.innerHTML = '';
     const defs: [ActionId, string][] = [
       ['ice', this.dict.actIceNone],
-      ['muddle', this.dict.actMuddle],
       ['stir', this.dict.actStir],
       ['shake', this.dict.actShake],
       ['dump', this.dict.actDump],
@@ -334,7 +337,7 @@ export class UI {
     const text = $('#mode-hint-text');
     hint.classList.remove('hidden');
     $('#customer').classList.add('dim');
-    text.textContent = mode === 'stir' ? this.dict.stirHint : mode === 'shake' ? this.dict.shakeHint : this.dict.muddleHint;
+    text.textContent = mode === 'stir' ? this.dict.stirHint : this.dict.shakeHint;
     const mb = $('#btn-motion');
     mb.textContent = this.dict.shakeMotionBtn;
     mb.classList.toggle('hidden', !(mode === 'shake' && motionAvailable));
@@ -484,7 +487,6 @@ export class UI {
       const tech = [
         r.tech.map((t) => this.dict.techLabel[t]).join('/'),
         this.dict.iceLabels[r.ice],
-        r.muddle ? this.dict.muddleMark : '',
       ].filter(Boolean).join(' · ');
       const badge = got
         ? `<span class="book-stars">${'★'.repeat(got.stars)}${'<span class="dim">☆</span>'.repeat(Math.max(0, 3 - got.stars))}</span>`

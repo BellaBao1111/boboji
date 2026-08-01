@@ -24,7 +24,6 @@ export interface MixState {
   pours: Pour[];
   layers: Layer[];
   mixed: boolean;
-  muddled: boolean;
   shaken: boolean;
   stirred: boolean;
   ice: IceType;
@@ -57,7 +56,7 @@ export type Verdict =
 
 export interface NearMiss {
   recipe: Recipe;
-  reason: 'muddle' | 'missing' | 'ratio' | 'tech';
+  reason: 'missing' | 'ratio' | 'tech';
   /** missing 时缺的那种材料的主导味道: sour/sweet/fizz/bitter/other */
   missingTaste?: string;
 }
@@ -65,7 +64,7 @@ export interface NearMiss {
 // ---------------- Mix 操作 ----------------
 
 export function createMix(): MixState {
-  return { pours: [], layers: [], mixed: false, muddled: false, shaken: false, stirred: false, ice: 'none', waterMl: 0 };
+  return { pours: [], layers: [], mixed: false, shaken: false, stirred: false, ice: 'none', waterMl: 0 };
 }
 
 export function totalVol(mix: MixState): number {
@@ -134,10 +133,6 @@ export function applyShake(mix: MixState) {
   mix.mixed = true;
   mix.waterMl += totalVol(mix) * 0.18;
   rebuildMixedLayer(mix);
-}
-
-export function applyMuddle(mix: MixState) {
-  mix.muddled = true;
 }
 
 /** 摇碳酸会喷 */
@@ -219,9 +214,10 @@ function mixColor(mix: MixState): { rgb: [number, number, number]; alpha: number
 
 export function computeAttrs(mix: MixState): Attrs {
   let vol = 0, abvSum = 0, sweet = 0, sour = 0, bitter = 0, fizz = 0;
-  let mintLeaves = 0;
+  let mintLeaves = 0, dashes = 0;
   for (const p of mix.pours) {
     if (p.ing.unit === 'leaf') { mintLeaves += p.amount; continue; }
+    if (p.ing.unit === 'dash') { dashes += p.amount; continue; }
     vol += p.amount;
     abvSum += p.amount * p.ing.abv;
     sweet += p.amount * p.ing.sweet;
@@ -238,14 +234,14 @@ export function computeAttrs(mix: MixState): Attrs {
   if (mix.shaken) fz *= 0.25;
   const { rgb, alpha } = mixColor(mix);
   const abv = abvSum / d;
-  const minty = mintLeaves >= 2 && mix.muddled;
+  const minty = mintLeaves >= 2;
   return {
     vol: totV,
     abv,
     strength: Math.min(10, abv * 25),
     sweet: Math.min(10, sweet / d),
     sour: Math.min(10, sour / d),
-    bitter: Math.min(10, bitter / d),
+    bitter: Math.min(10, bitter / d + Math.min(dashes, 8) * 1.3),
     fizz: Math.min(10, fz),
     colorCss: `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha.toFixed(2)})`,
     colorRGB: rgb,
@@ -267,18 +263,21 @@ function distinctSpirits(mix: MixState): number {
 
 function checkDisaster(mix: MixState): Disaster | null {
   const vol = totalVol(mix) - mix.waterMl;
-  let spiritMl = 0;
+  let spiritMl = 0, dashes = 0;
   for (const p of mix.pours) {
+    if (p.ing.unit === 'dash') { dashes += p.amount; continue; }
     if (p.ing.unit !== 'ml') continue;
     if (p.ing.cat === 'spirit') spiritMl += p.amount;
   }
-  if (mintCount(mix) >= 8) return DISASTER_BY_ID.toothpaste;
+  if (mintCount(mix) >= 10) return DISASTER_BY_ID.toothpaste;
+  if (dashes >= 6) return DISASTER_BY_ID.herbal;
   if (vol >= 80 && spiritMl / Math.max(1, vol) >= 0.95 && distinctSpirits(mix) >= 2) return DISASTER_BY_ID.donkey;
   if (computeAttrs(mix).sweet >= 9 && vol >= 50) return DISASTER_BY_ID.sugarbomb;
   return null;
 }
 
 function itemBand(ing: Ing, target: number): [number, number] {
+  if (ing.unit === 'dash') return [Math.max(1, target - 1), target + 1];
   if (ing.unit === 'leaf') return [Math.max(1, target - 2), target + 3];
   const band = Math.max(target * 0.35, 8);
   return [Math.max(1, target - band), target + band];
@@ -288,7 +287,6 @@ interface MatchResult { recipe: Recipe; stars: 1 | 2 | 3; techWrong: boolean; er
 
 function tryMatch(mix: MixState, recipe: Recipe): MatchResult | null {
   if (recipe.keepLayers && mix.mixed) return null;
-  if (recipe.muddle && !mix.muddled) return null;
   const poured = new Map<string, { ing: Ing; amount: number }>();
   for (const p of mix.pours) {
     const prev = poured.get(p.ing.id);
@@ -332,7 +330,6 @@ function findNearMiss(mix: MixState): NearMiss | null {
   }
   if (!best) return null;
   const { recipe, missing } = best;
-  if (recipe.muddle && !mix.muddled && pouredIds.has('mint')) return { recipe, reason: 'muddle' };
   if (missing.length === 1) {
     return { recipe, reason: 'missing', missingTaste: INGREDIENT_TASTE(missing[0]) };
   }
@@ -344,6 +341,7 @@ function INGREDIENT_TASTE(id: string): string | undefined {
   const ing = ING_BY_ID[id];
   if (!ing) return undefined;
   if (ing.unit === 'leaf') return 'mint';
+  if (ing.unit === 'dash') return 'bitter';
   const m = Math.max(ing.sour, ing.sweet, ing.fizz, ing.bitter, ing.abv * 20);
   if (m <= 0) return 'other';
   if (m === ing.sour) return 'sour';
@@ -378,7 +376,7 @@ export function compositionKey(mix: MixState): string {
     .filter((p) => p.amount > 0)
     .map((p) => `${p.ing.id}:${p.ing.unit === 'ml' ? Math.round(p.amount / 8) * 8 : p.amount}`)
     .sort();
-  return `${parts.join(',')}|${mix.muddled ? 'm' : ''}${actualTech(mix)}`;
+  return `${parts.join(',')}|${actualTech(mix)}`;
 }
 
 function dominantTrait(attrs: Attrs): string {

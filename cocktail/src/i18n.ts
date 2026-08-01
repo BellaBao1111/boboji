@@ -18,7 +18,6 @@ export interface Dict {
   actIceNone: string;
   actIceCube: string;
   actIceCrushed: string;
-  actMuddle: string;
   actStir: string;
   actShake: string;
   actServe: string;
@@ -27,13 +26,11 @@ export interface Dict {
   stirHint: string;
   shakeHint: string;
   shakeMotionBtn: string;
-  muddleHint: string;
   cancel: string;
   // 飘字 / 提示
   toastFull: string;
   toastEmpty: string;
   toastDumped: string;
-  toastMintRaw: string;
   overflow: string;
   mlSuffix: (n: number) => string;
   dashSuffix: (n: number) => string;
@@ -52,7 +49,6 @@ export interface Dict {
   techWrongJoke: (recipe: string) => string;
   nearMissRatio: (recipe: string) => string;
   nearMissTech: string;
-  nearMissMuddle: string;
   nearMissMissing: Record<string, string>;
   attrNames: [string, string, string, string, string];
   abvLabel: (pct: string) => string;
@@ -71,9 +67,8 @@ export interface Dict {
   bestStars: string;
   recipeOf: string;
   techLabel: Record<string, string>;
-  muddleMark: string;
   notMade: string;
-  iceLabels: Record<'cube' | 'none' | 'any', string>;
+  iceLabels: Record<'cube' | 'crushed' | 'none' | 'any', string>;
   ticketTitle: string;
   ticketThanks: string;
   jigger: string;
@@ -124,7 +119,6 @@ export const DICTS: Record<Lang, Dict> = {
     actIceNone: '无冰',
     actIceCube: '方冰',
     actIceCrushed: '碎冰',
-    actMuddle: '捣',
     actStir: '搅拌',
     actShake: '摇和',
     actServe: '上酒',
@@ -132,12 +126,10 @@ export const DICTS: Record<Lang, Dict> = {
     stirHint: '在杯子附近画圈搅拌 ↻',
     shakeHint: '快速甩动指针（或狂按空格）摇它！',
     shakeMotionBtn: '📳 用手机摇一摇',
-    muddleHint: '连点杯子，把香气捣出来！',
     cancel: '算了',
     toastFull: '满了满了！杯子快装不下了',
     toastEmpty: '杯子还是空的，先倒点什么吧',
     toastDumped: '倒掉重来，当无事发生',
-    toastMintRaw: '薄荷好像没什么味道……要不要捣一捣？',
     overflow: '溢出来了！',
     mlSuffix: (n) => `${n} ml`,
     dashSuffix: (n) => `${n} 滴`,
@@ -155,7 +147,6 @@ export const DICTS: Record<Lang, Dict> = {
     techWrongJoke: (recipe) => `味道是${recipe}的味道，但手法不太对哦（行家皱了皱眉）`,
     nearMissRatio: (recipe) => `离一杯经典只差一点点……比例再琢磨琢磨？`,
     nearMissTech: '材料都对，要不要换个手法试试？',
-    nearMissMuddle: '闻起来少了点香气……薄荷是不是该捣一捣？',
     nearMissMissing: {
       sour: '感觉离一杯经典很近了……好像少了点酸？',
       sweet: '感觉离一杯经典很近了……好像少了点甜？',
@@ -181,9 +172,8 @@ export const DICTS: Record<Lang, Dict> = {
     bestStars: '最佳',
     recipeOf: '配方',
     techLabel: { build: '直调', stir: '搅拌', shake: '摇和' },
-    muddleMark: '要捣',
     notMade: '还没调过',
-    iceLabels: { cube: '加冰', none: '不加冰', any: '冰随意' },
+    iceLabels: { cube: '加冰', crushed: '碎冰', none: '不加冰', any: '冰随意' },
     ticketTitle: '点单',
     ticketThanks: '· 谢 谢 惠 顾 ·',
     jigger: '量杯',
@@ -192,7 +182,7 @@ export const DICTS: Record<Lang, Dict> = {
     introTitle: '欢迎来到摇摇酒馆',
     introLines: [
       '按住瓶子往杯里倒，倒多倒少全看手感',
-      '摇和、搅拌、捣一捣——手法决定一杯酒的命运',
+      '摇和、搅拌、分层——手法决定一杯酒的命运',
       '调中经典会解锁酒谱；调出怪东西……也会被记住',
     ],
     introStart: '开始调酒',
@@ -232,7 +222,6 @@ export const DICTS: Record<Lang, Dict> = {
     actIceNone: 'No Ice',
     actIceCube: 'Cubes',
     actIceCrushed: 'Crushed',
-    actMuddle: 'Muddle',
     actStir: 'Stir',
     actShake: 'Shake',
     actServe: 'Serve',
@@ -240,12 +229,10 @@ export const DICTS: Record<Lang, Dict> = {
     stirHint: 'Draw circles near the glass to stir ↻',
     shakeHint: 'Wiggle the pointer fast (or mash Space) to shake!',
     shakeMotionBtn: '📳 Shake your phone',
-    muddleHint: 'Tap the glass to muddle the aroma out!',
     cancel: 'Never mind',
     toastFull: 'Whoa — the glass is nearly full!',
     toastEmpty: 'The glass is empty. Pour something first.',
     toastDumped: 'Down the drain. Nothing happened here.',
-    toastMintRaw: 'The mint tastes like… nothing. Maybe muddle it?',
     overflow: 'Overflowing!',
     mlSuffix: (n) => `${n} ml`,
     dashSuffix: (n) => `${n} dash`,
@@ -263,7 +250,6 @@ export const DICTS: Record<Lang, Dict> = {
     techWrongJoke: (recipe) => `Tastes like a ${recipe}, but the technique was… creative. (A connoisseur winces.)`,
     nearMissRatio: () => 'So close to a classic… maybe tweak the ratio?',
     nearMissTech: 'Right ingredients — maybe try a different technique?',
-    nearMissMuddle: 'Something aromatic is missing… should the mint be muddled?',
     nearMissMissing: {
       sour: 'So close to a classic… missing something sour?',
       sweet: 'So close to a classic… missing something sweet?',
@@ -289,9 +275,8 @@ export const DICTS: Record<Lang, Dict> = {
     bestStars: 'Best',
     recipeOf: 'Recipe',
     techLabel: { build: 'Build', stir: 'Stir', shake: 'Shake' },
-    muddleMark: 'Muddle',
     notMade: 'Not mixed yet',
-    iceLabels: { cube: 'With ice', none: 'No ice', any: 'Ice: any' },
+    iceLabels: { cube: 'With ice', crushed: 'Crushed ice', none: 'No ice', any: 'Ice: any' },
     ticketTitle: 'ORDER',
     ticketThanks: '· THANK YOU ·',
     jigger: 'Jigger',
@@ -300,7 +285,7 @@ export const DICTS: Record<Lang, Dict> = {
     introTitle: 'Welcome to The Tipsy Shaker',
     introLines: [
       'Hold a bottle to pour — how much is up to your hands',
-      'Shake, stir, muddle — technique decides a drink\'s fate',
+      'Shake, stir, layer — technique decides a drink\'s fate',
       'Nail a classic to unlock it; mix something weird… it will be remembered too',
     ],
     introStart: 'Start Mixing',

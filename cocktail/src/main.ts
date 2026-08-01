@@ -4,7 +4,7 @@ import './style.css';
 import { evalOrder, makeNight, orderChips, type Order } from './customers';
 import { CAPACITY, ING_BY_ID, RECIPES, type Ing, type Recipe } from './data';
 import {
-  addPour, applyMuddle, applyShake, applyStir, computeAttrs, createMix, ingColorCss,
+  addPour, applyShake, applyStir, computeAttrs, createMix, ingColorCss,
   judge, pourAmountOf, sprayVerdict, totalVol, willSpray,
   type Attrs, type MixState, type Verdict,
 } from './engine';
@@ -51,10 +51,6 @@ let lastShakeTick = 0;
 let lastPointerX: number | null = null;
 let motionAttached = false;
 
-// 捣
-let muddleTaps = 0;
-const MUDDLE_NEED = 4;
-
 let ambientStarted = false;
 
 const ui = new UI(dict, {
@@ -64,7 +60,6 @@ const ui = new UI(dict, {
   onAction(a) {
     if (mode !== 'idle') return;
     if (a === 'ice') cycleIce();
-    else if (a === 'muddle') enterMode('muddle');
     else if (a === 'stir') enterMode('stir');
     else if (a === 'shake') enterMode('shake');
     else if (a === 'dump') dump();
@@ -108,7 +103,6 @@ function updateAmounts() {
 
 function resetMix() {
   mix = createMix();
-  muddleTaps = 0;
   updateAmounts();
   ui.setIceLabel(mix.ice);
 }
@@ -171,12 +165,10 @@ function dump() {
 // ---------------- 模式（搅 / 摇 / 捣） ----------------
 
 function enterMode(m: Mode) {
-  if (totalVol(mix) - mix.waterMl < 5 && m !== 'muddle') { ui.toast(dict.toastEmpty); return; }
-  if (m === 'muddle' && mix.pours.length === 0) { ui.toast(dict.toastEmpty); return; }
+  if (totalVol(mix) - mix.waterMl < 5) { ui.toast(dict.toastEmpty); return; }
   mode = m;
   stirTotal = 0; stirLast = null;
   shakeProgress = 0; shakeOffset = 0; shakeVel = 0;
-  muddleTaps = 0;
   ui.setShelfEnabled(false);
   ui.setActionsEnabled(false);
   const iosMotion = typeof DeviceMotionEvent !== 'undefined'
@@ -187,10 +179,7 @@ function enterMode(m: Mode) {
 
 function exitMode(apply = false) {
   if (mode === 'shake') detachMotion();
-  if (apply) {
-    if (mode === 'stir') { applyStir(mix); sfx.swish(); sfx.clink(); }
-    else if (mode === 'muddle') { applyMuddle(mix); sfx.pop(); }
-  }
+  if (apply && mode === 'stir') { applyStir(mix); sfx.swish(); sfx.clink(); }
   mode = 'idle';
   ui.hideModeHint();
   ui.setShelfEnabled(true);
@@ -271,7 +260,6 @@ const stage = ui.stage;
 stage.addEventListener('pointerdown', (e) => {
   if (mode === 'stir') { stirPointer = true; stirLast = null; }
   if (mode === 'shake') lastPointerX = e.clientX;
-  if (mode === 'muddle') muddleTap();
 });
 stage.addEventListener('pointermove', (e) => {
   if (mode === 'stir' && stirPointer) {
@@ -297,15 +285,6 @@ const stagePointerEnd = () => { stirPointer = false; stirLast = null; lastPointe
 stage.addEventListener('pointerup', stagePointerEnd);
 stage.addEventListener('pointercancel', stagePointerEnd);
 
-function muddleTap() {
-  muddleTaps++;
-  scene.pestleHit();
-  sfx.thunk();
-  scene.screenShake(2.5);
-  if (pourAmountOf(mix, 'mint') > 0) scene.leafBurst();
-  scene.kickSurface(4);
-  if (muddleTaps >= MUDDLE_NEED) window.setTimeout(() => exitMode(true), 160);
-}
 
 // ---------------- 上酒与判定 ----------------
 
@@ -383,8 +362,7 @@ function presentVerdict(verdict: Verdict) {
     lines.push(save.lang === 'zh' ? verdict.taste[0] : verdict.taste[1]);
     if (verdict.nearMiss) {
       const nm = verdict.nearMiss;
-      if (nm.reason === 'muddle') lines.push(dict.nearMissMuddle);
-      else if (nm.reason === 'tech') lines.push(dict.nearMissTech);
+      if (nm.reason === 'tech') lines.push(dict.nearMissTech);
       else if (nm.reason === 'ratio') lines.push(dict.nearMissRatio(''));
       else lines.push(dict.nearMissMissing[nm.missingTaste ?? 'other'] ?? dict.nearMissMissing.other);
     }
@@ -472,7 +450,6 @@ ui.recipeColor = (r: Recipe): string => {
   if (hit) return hit;
   const fake = createMix();
   for (const it of r.items) addPour(fake, ING_BY_ID[it.id], it.amount);
-  if (r.muddle) applyMuddle(fake);
   if (r.tech[0] === 'shake') applyShake(fake);
   else if (r.tech[0] === 'stir') applyStir(fake);
   const c = computeAttrs(fake).colorCss;
@@ -619,7 +596,6 @@ function loop(now: number) {
     stirProgress: Math.min(1, stirTotal / STIR_NEED),
     shakeProgress,
     shakeOffset,
-    muddlePress: Math.min(1, muddleTaps / MUDDLE_NEED),
     neonText: dict.neonName,
   };
   scene.frame(dt, state);
