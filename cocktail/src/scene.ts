@@ -36,9 +36,11 @@ export interface GlassGeom {
 }
 
 export class Scene {
+  /** 像素画：内部缓冲缩小 PX 倍，CSS pixelated 放大 → 真像素颗粒 */
+  static readonly PX = 3;
   private cv: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
-  private w = 0; private h = 0; private dpr = 1;
+  private w = 0; private h = 0;
   /** 底部 UI 占据的高度（玻璃杯要放在它上面） */
   uiInset = 210;
 
@@ -60,11 +62,10 @@ export class Scene {
   }
 
   resize() {
-    this.dpr = Math.min(2, window.devicePixelRatio || 1);
     this.w = this.cv.clientWidth;
     this.h = this.cv.clientHeight;
-    this.cv.width = Math.max(1, Math.round(this.w * this.dpr));
-    this.cv.height = Math.max(1, Math.round(this.h * this.dpr));
+    this.cv.width = Math.max(1, Math.ceil(this.w / Scene.PX));
+    this.cv.height = Math.max(1, Math.ceil(this.h / Scene.PX));
     this.rain = [];
     for (let i = 0; i < 42; i++) {
       this.rain.push({ x: Math.random(), y: Math.random(), len: 10 + Math.random() * 18, speed: 240 + Math.random() * 260, alpha: 0.10 + Math.random() * 0.16 });
@@ -138,7 +139,8 @@ export class Scene {
   frame(dt: number, s: SceneState) {
     this.t += dt;
     const { ctx } = this;
-    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    const invPx = 1 / Scene.PX;
+    ctx.setTransform(invPx, 0, 0, invPx, 0, 0);
 
     // 屏幕震动
     if (this.shakeMag > 0.1) {
@@ -174,9 +176,9 @@ export class Scene {
   private drawRoom() {
     const { ctx, w, h } = this;
     const bg = ctx.createLinearGradient(0, 0, 0, h);
-    bg.addColorStop(0, '#171126');
-    bg.addColorStop(0.55, '#1a1222');
-    bg.addColorStop(1, '#120c18');
+    bg.addColorStop(0, '#2b1b13');
+    bg.addColorStop(0.55, '#251610');
+    bg.addColorStop(1, '#190e0a');
     ctx.fillStyle = bg;
     ctx.fillRect(-20, -20, w + 40, h + 40);
     // 暖光晕（吧台上方）
@@ -235,13 +237,13 @@ export class Scene {
     for (const b of this.winCache.buildings) {
       ctx.fillRect(wx + b.x * ww, wy + wh * (1 - b.h * 0.85), b.w * ww, wh * b.h);
     }
-    ctx.fillStyle = 'rgba(255,206,120,0.55)';
+    ctx.fillStyle = 'rgba(255,206,120,0.6)';
     for (const l of this.winCache.lights) {
-      ctx.fillRect(wx + l.x * ww, wy + wh * (l.y * 0.98), 1.6, 1.6);
+      ctx.fillRect(wx + l.x * ww, wy + wh * (l.y * 0.98), 3, 3);
     }
     // 雨
     ctx.strokeStyle = '#aecbe8';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 2.6;
     for (const r of this.rain) {
       r.y += (r.speed * dt) / (wh * 3.2);
       if (r.y > 1.05) { r.y = -0.06; r.x = Math.random(); }
@@ -271,9 +273,9 @@ export class Scene {
     const { ctx, w } = this;
     const { wy } = this.winRect();
     const flicker = 0.82 + Math.sin(this.t * 13.7) * 0.05 + Math.sin(this.t * 47.3) * 0.04 + (Math.random() < 0.007 ? -0.4 : 0);
-    const size = Math.min(27, w * 0.058);
+    const size = Math.min(36, w * 0.08);
     ctx.save();
-    ctx.font = `900 ${size}px ui-rounded, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif`;
+    ctx.font = `${size}px "Fusion Pixel", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const x = w / 2, y = wy + size * 1.15;
@@ -356,9 +358,9 @@ export class Scene {
     const g = this.glass();
     const cy = g.bottom + 4;
     const grad = ctx.createLinearGradient(0, cy, 0, h);
-    grad.addColorStop(0, '#4a2d3c');
-    grad.addColorStop(0.12, '#3a2330');
-    grad.addColorStop(1, '#20141f');
+    grad.addColorStop(0, '#5e3a28');
+    grad.addColorStop(0.12, '#492b1d');
+    grad.addColorStop(1, '#2a1811');
     ctx.fillStyle = grad;
     ctx.fillRect(0, cy, w, h - cy);
     // 黄铜台沿
@@ -508,20 +510,20 @@ export class Scene {
     }
 
     // 杯壁高光
-    ctx.strokeStyle = 'rgba(235,245,255,0.5)';
-    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = 'rgba(235,245,255,0.55)';
+    ctx.lineWidth = 3;
     this.glassPath(g);
     ctx.closePath();
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.moveTo(g.cx - g.wTop / 2 + 7, g.top + 12);
-    ctx.lineTo(g.cx - g.wBottom / 2 + 7, g.bottom - 16);
+    ctx.moveTo(g.cx - g.wTop / 2 + 8, g.top + 12);
+    ctx.lineTo(g.cx - g.wBottom / 2 + 8, g.bottom - 16);
     ctx.stroke();
     // 杯口椭圆
-    ctx.strokeStyle = 'rgba(235,245,255,0.55)';
-    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = 'rgba(235,245,255,0.6)';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.ellipse(g.cx, g.top, g.wTop / 2, 5, 0, 0, Math.PI * 2);
     ctx.stroke();
@@ -535,7 +537,7 @@ export class Scene {
     const { ctx } = this;
     if (s.fizz > 0.8 && this.bubbles.length < 8 + s.fizz * 4 && Math.random() < dt * (2 + s.fizz * 2.2)) {
       const hw = this.widthAt(g, bottomY - 4, 8);
-      this.bubbles.push({ x: g.cx + (Math.random() * 2 - 1) * hw, y: bottomY - 4 - Math.random() * (bottomY - topY) * 0.5, r: 0.8 + Math.random() * 1.6, vy: 14 + Math.random() * 26 });
+      this.bubbles.push({ x: g.cx + (Math.random() * 2 - 1) * hw, y: bottomY - 4 - Math.random() * (bottomY - topY) * 0.5, r: 1.6 + Math.random() * 2, vy: 14 + Math.random() * 26 });
     }
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     for (let i = this.bubbles.length - 1; i >= 0; i--) {
@@ -592,10 +594,10 @@ export class Scene {
   private drawCondensation(g: GlassGeom, s: SceneState, dt: number) {
     const { ctx } = this;
     if (!s.cold) { this.cond.length = 0; return; }
-    if (this.cond.length < 26 && Math.random() < dt * 9) {
+    if (this.cond.length < 16 && Math.random() < dt * 8) {
       const f = Math.random();
       const y = g.top + 14 + (g.bottom - g.top - 30) * Math.random();
-      this.cond.push({ x: g.cx - this.widthAt(g, y, 2) + this.widthAt(g, y, 2) * 2 * f, y, r: 0.7 + Math.random() * 1.4, slide: Math.random() < 0.12 ? 8 + Math.random() * 16 : 0 });
+      this.cond.push({ x: g.cx - this.widthAt(g, y, 2) + this.widthAt(g, y, 2) * 2 * f, y, r: 1.6 + Math.random() * 2.2, slide: Math.random() < 0.12 ? 8 + Math.random() * 16 : 0 });
     }
     ctx.fillStyle = 'rgba(240,250,255,0.4)';
     for (const c of this.cond) {

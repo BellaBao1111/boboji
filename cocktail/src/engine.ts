@@ -43,7 +43,6 @@ export interface Attrs {
   colorCss: string;
   colorRGB: [number, number, number];
   alpha: number;
-  creamy: boolean;
   minty: boolean;
   cold: boolean;
   foam: boolean;
@@ -73,6 +72,12 @@ export function totalVol(mix: MixState): number {
   let v = mix.waterMl;
   for (const p of mix.pours) if (p.ing.unit === 'ml') v += p.amount;
   return v;
+}
+
+export function mintCount(mix: MixState): number {
+  let n = 0;
+  for (const p of mix.pours) if (p.ing.unit === 'leaf') n += p.amount;
+  return n;
 }
 
 export function pourAmountOf(mix: MixState, id: string): number {
@@ -213,10 +218,9 @@ function mixColor(mix: MixState): { rgb: [number, number, number]; alpha: number
 // ---------------- 属性计算 ----------------
 
 export function computeAttrs(mix: MixState): Attrs {
-  let vol = 0, abvSum = 0, sweet = 0, sour = 0, bitter = 0, fizz = 0, creamMl = 0;
-  let dashes = 0, mintLeaves = 0;
+  let vol = 0, abvSum = 0, sweet = 0, sour = 0, bitter = 0, fizz = 0;
+  let mintLeaves = 0;
   for (const p of mix.pours) {
-    if (p.ing.unit === 'dash') { dashes += p.amount; continue; }
     if (p.ing.unit === 'leaf') { mintLeaves += p.amount; continue; }
     vol += p.amount;
     abvSum += p.amount * p.ing.abv;
@@ -224,7 +228,6 @@ export function computeAttrs(mix: MixState): Attrs {
     sour += p.amount * p.ing.sour;
     bitter += p.amount * p.ing.bitter;
     fizz += p.amount * p.ing.fizz;
-    if (p.ing.tag === 'creamy') creamMl += p.amount;
   }
   // 冰的稀释（结算时动态计入）
   const iceWater = vol * (mix.ice === 'cube' ? 0.06 : mix.ice === 'crushed' ? 0.12 : 0);
@@ -242,15 +245,14 @@ export function computeAttrs(mix: MixState): Attrs {
     strength: Math.min(10, abv * 25),
     sweet: Math.min(10, sweet / d),
     sour: Math.min(10, sour / d),
-    bitter: Math.min(10, bitter / d + Math.min(dashes, 8) * 1.3),
+    bitter: Math.min(10, bitter / d),
     fizz: Math.min(10, fz),
     colorCss: `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha.toFixed(2)})`,
     colorRGB: rgb,
     alpha,
-    creamy: creamMl >= 15,
     minty,
     cold: mix.shaken || mix.ice !== 'none',
-    foam: mix.shaken && (sour / d > 1.5 || creamMl > 0),
+    foam: mix.shaken && sour / d > 1.5,
     fillFrac: Math.min(1, totV / CAPACITY),
   };
 }
@@ -265,23 +267,19 @@ function distinctSpirits(mix: MixState): number {
 
 function checkDisaster(mix: MixState): Disaster | null {
   const vol = totalVol(mix) - mix.waterMl;
-  let spiritMl = 0, sourMl = 0, creamMl = 0, dashes = 0;
+  let spiritMl = 0;
   for (const p of mix.pours) {
-    if (p.ing.unit === 'dash') { dashes += p.amount; continue; }
     if (p.ing.unit !== 'ml') continue;
     if (p.ing.cat === 'spirit') spiritMl += p.amount;
-    if (p.ing.sour >= 4) sourMl += p.amount;
-    if (p.ing.tag === 'creamy') creamMl += p.amount;
   }
-  if (creamMl >= 15 && sourMl >= 15) return DISASTER_BY_ID.curdle;
+  if (mintCount(mix) >= 8) return DISASTER_BY_ID.toothpaste;
   if (vol >= 80 && spiritMl / Math.max(1, vol) >= 0.95 && distinctSpirits(mix) >= 2) return DISASTER_BY_ID.donkey;
-  if (dashes >= 6) return DISASTER_BY_ID.herbal;
+  if (computeAttrs(mix).sweet >= 9 && vol >= 50) return DISASTER_BY_ID.sugarbomb;
   return null;
 }
 
 function itemBand(ing: Ing, target: number): [number, number] {
-  if (ing.unit === 'dash') return [Math.max(1, target - 1), target + 1];
-  if (ing.unit === 'leaf') return [Math.max(1, target - 2), target + 4];
+  if (ing.unit === 'leaf') return [Math.max(1, target - 2), target + 3];
   const band = Math.max(target * 0.35, 8);
   return [Math.max(1, target - band), target + band];
 }
@@ -309,7 +307,7 @@ function tryMatch(mix: MixState, recipe: Recipe): MatchResult | null {
     const [lo, hi] = itemBand(p.ing, it.amount);
     if (p.amount < lo || p.amount > hi) return null;
     if (p.ing.unit === 'ml') { errSum += Math.abs(p.amount - it.amount) / it.amount; n++; }
-    else { errSum += Math.abs(p.amount - it.amount) <= 1 ? 0 : 0.3; n++; }
+    else { errSum += Math.abs(p.amount - it.amount) <= 1 ? 0 : 0.25; n++; }
   }
   const err = n ? errSum / n : 1;
   const techWrong = !recipe.tech.includes(actualTech(mix));
@@ -346,7 +344,6 @@ function INGREDIENT_TASTE(id: string): string | undefined {
   const ing = ING_BY_ID[id];
   if (!ing) return undefined;
   if (ing.unit === 'leaf') return 'mint';
-  if (ing.unit === 'dash') return 'bitter';
   const m = Math.max(ing.sour, ing.sweet, ing.fizz, ing.bitter, ing.abv * 20);
   if (m <= 0) return 'other';
   if (m === ing.sour) return 'sour';
@@ -385,7 +382,6 @@ export function compositionKey(mix: MixState): string {
 }
 
 function dominantTrait(attrs: Attrs): string {
-  if (attrs.creamy) return 'creamy';
   if (attrs.strength >= 7) return 'strong';
   if (attrs.bitter >= 5.5) return 'bitter';
   if (attrs.sour >= 4.5) return 'sour';

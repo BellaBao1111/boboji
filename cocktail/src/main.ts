@@ -537,7 +537,6 @@ function showCurrentCustomer() {
     name: zh ? order.type.name.zh : order.type.name.en,
     progress: dict.custProgress(night.idx + 1, night.orders.length),
     dialogue: zh ? order.dialogue.zh : order.dialogue.en,
-    hint: order.hint ? (zh ? order.hint.zh : order.hint.en) : undefined,
     chips: orderChips(order, save.lang),
   });
 }

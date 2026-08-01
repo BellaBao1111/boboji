@@ -60,7 +60,6 @@ export interface CustomerView {
   name: string;
   progress: string;
   dialogue: string;
-  hint?: string;
   chips: string[];
 }
 
@@ -68,26 +67,22 @@ export interface SummaryRow { emoji: string; name: string; tip: number }
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 
-// 手绘线性图标（统一 1.7 描边，取代 emoji 的"高级感"关键）
-const svg = (inner: string) =>
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
-
-export const ICONS: Record<string, string> = {
-  ice: svg('<path d="M12 3.5v17M4.6 7.75l14.8 8.5M19.4 7.75L4.6 16.25"/><path d="M12 3.5l-1.8 1.8M12 3.5l1.8 1.8M12 20.5l-1.8-1.8M12 20.5l1.8-1.8"/>'),
-  muddle: svg('<path d="M16.5 3.5l4 4"/><path d="M18.5 5.5L9.5 14.5"/><circle cx="7" cy="17" r="3.6" fill="currentColor" stroke="none" opacity="0.85"/><path d="M3.5 21h9"/>'),
-  stir: svg('<path d="M13 3c-2 1.6-2 3.4 0 5s2 3.4 0 5"/><path d="M13 13v5"/><ellipse cx="13" cy="19.6" rx="2.6" ry="1.8"/>'),
-  shake: svg('<path d="M9.5 3.5h5l.8 2.5H8.7z"/><path d="M8.7 6h6.6l1.4 12.2a1.8 1.8 0 01-1.8 1.8h-5.8a1.8 1.8 0 01-1.8-1.8z"/><path d="M4.5 9L3 8M19.5 9l1.5-1M4 13.5H2.5M20 13.5h1.5"/>'),
-  dump: svg('<g transform="rotate(-30 11 10)"><path d="M7 4.5h9l-1.4 10H8.4z"/></g><path d="M15.5 16.5v2.2M18.3 18.2l.01.01M13 19.8l.01.01"/>'),
-  serve: svg('<path d="M12 5a7 7 0 017 7v2.5H5V12a7 7 0 017-7z"/><path d="M3.5 17.5h17"/><path d="M12 5V3.5"/>'),
-  home: svg('<path d="M4.5 11L12 4.5 19.5 11"/><path d="M6.5 9.5V19a.9.9 0 00.9.9h9.2a.9.9 0 00.9-.9V9.5"/>'),
-  book: svg('<path d="M5 19.2A2.2 2.2 0 017.2 17H19V3.5H7.2A2.2 2.2 0 005 5.7z"/><path d="M5 19.2V20a.8.8 0 00.8.8H19V17"/>'),
-  sound: svg('<path d="M10.5 5.5L6.5 9H4v6h2.5l4 3.5z"/><path d="M14.5 9.5a3.6 3.6 0 010 5M17 7.5a6.5 6.5 0 010 9"/>'),
-  soundOff: svg('<path d="M10.5 5.5L6.5 9H4v6h2.5l4 3.5z"/><path d="M15 10l5 4.5M20 10l-5 4.5"/>'),
-  jigger: svg('<path d="M7.5 3.5h9L13.8 10h-3.6z"/><path d="M7.5 20.5h9L13.8 14h-3.6z"/>'),
-  martini: svg('<path d="M4.5 5h15L12 13.5z"/><path d="M12 13.5V19"/><path d="M8.5 20.5h7"/><circle cx="14.6" cy="7.6" r="1.5"/>'),
-  moon: svg('<path d="M19.5 13.5A7.8 7.8 0 1110.5 4a6.2 6.2 0 009 9.5z"/>'),
-  flask: svg('<path d="M10 3.5v5.6l-4.6 8.4A1.9 1.9 0 007.1 20h9.8a1.9 1.9 0 001.7-2.5L14 9.1V3.5"/><path d="M8.5 3.5h7M8.5 14.5h7"/>'),
-};
+// 像素画马天尼杯（首页 logo 用）
+const pxRect = (x: number, y: number, w: number, c: string) => `<rect x="${x}" y="${y}" width="${w}" height="1" fill="${c}"/>`;
+const PIXEL_MARTINI = (() => {
+  const M = '#f2c14c', O = '#8cc98c', L = '#ee9aa6';
+  return `<svg viewBox="0 0 16 12" shape-rendering="crispEdges" aria-hidden="true">${[
+    pxRect(1, 0, 14, M),
+    pxRect(2, 1, 12, L), pxRect(9, 1, 2, O),
+    pxRect(3, 2, 10, L),
+    pxRect(4, 3, 8, M),
+    pxRect(5, 4, 6, M),
+    pxRect(6, 5, 4, M),
+    pxRect(7, 6, 2, M), pxRect(7, 7, 2, M), pxRect(7, 8, 2, M),
+    pxRect(5, 9, 6, M),
+    pxRect(4, 10, 8, M),
+  ].join('')}</svg>`;
+})();
 
 export class UI {
   private dict: Dict;
@@ -120,6 +115,7 @@ export class UI {
         </div>
       </div>
       <div id="customer" class="hidden"></div>
+      <div id="ing-tip" class="hidden"></div>
       <div id="mode-hint" class="hidden">
         <span id="mode-hint-text"></span>
         <button id="btn-motion" class="mini-btn hidden"></button>
@@ -194,9 +190,6 @@ export class UI {
     if (ing.unit === 'leaf') {
       glyph.classList.add('glyph-leaf');
       glyph.textContent = '🌿';
-    } else if (ing.unit === 'dash') {
-      glyph.classList.add('glyph-dash');
-      glyph.style.setProperty('--c', ing.color);
     } else {
       glyph.style.setProperty('--c', ing.color);
       if (ing.cat === 'mixer') glyph.classList.add('glyph-tall');
@@ -223,8 +216,42 @@ export class UI {
       b.addEventListener('click', () => this.hooks.onTapUnit(ing));
     }
     b.addEventListener('contextmenu', (e) => e.preventDefault());
+    // 悬停显示属性卡（鼠标）
+    b.addEventListener('pointerenter', (e) => {
+      if (e.pointerType === 'mouse') this.showIngTip(ing, b);
+    });
+    b.addEventListener('pointerleave', () => this.hideIngTip());
     return b;
   }
+
+  // ---------------- 材料属性悬停卡 ----------------
+  showIngTip(ing: Ing, anchor: HTMLElement) {
+    const tip = $('#ing-tip');
+    const vals: [string, number][] = [
+      [this.dict.attrNames[0], ing.abv * 25],
+      [this.dict.attrNames[1], ing.sweet],
+      [this.dict.attrNames[2], ing.sour],
+      [this.dict.attrNames[3], ing.bitter],
+      [this.dict.attrNames[4], ing.fizz],
+    ];
+    const bars = vals
+      .filter(([, v]) => v > 0.3)
+      .map(([n, v]) => `<div class="tip-row"><span>${n}</span><span class="mini-track"><i style="width:${Math.round(Math.min(10, v) * 10)}%"></i></span></div>`)
+      .join('');
+    tip.innerHTML = `
+      <div class="tip-name">${escapeHtml(this.ingName(ing))}</div>
+      ${bars || `<div class="tip-row tip-zero">${escapeHtml(this.dict.alcoholFree)}</div>`}
+      <div class="tip-note">${escapeHtml(this.isZh() ? ing.noteZh : ing.noteEn)}</div>
+    `;
+    tip.classList.remove('hidden');
+    const r = anchor.getBoundingClientRect();
+    const tw = tip.offsetWidth;
+    let x = r.left + r.width / 2 - tw / 2;
+    x = Math.max(8, Math.min(window.innerWidth - tw - 8, x));
+    tip.style.left = `${x}px`;
+    tip.style.top = `${r.top - tip.offsetHeight - 10}px`;
+  }
+  hideIngTip() { $('#ing-tip').classList.add('hidden'); }
 
   ingName(ing: Ing): string { return this.isZh() ? ing.zh : ing.en; }
   recipeName(r: Recipe): string { return this.isZh() ? r.zh : r.en; }
@@ -238,8 +265,7 @@ export class UI {
       const v = map.get(id) ?? 0;
       if (v <= 0) { el.textContent = ''; el.classList.remove('has'); return; }
       el.classList.add('has');
-      el.textContent = ing.unit === 'ml' ? this.dict.mlSuffix(Math.round(v))
-        : ing.unit === 'dash' ? this.dict.dashSuffix(v) : this.dict.leafSuffix(v);
+      el.textContent = ing.unit === 'ml' ? this.dict.mlSuffix(Math.round(v)) : this.dict.leafSuffix(v);
     });
   }
 
@@ -263,7 +289,7 @@ export class UI {
       const b = document.createElement('button');
       b.className = `act act-${id}`;
       b.dataset.act = id;
-      b.innerHTML = `<span class="act-icon">${ICONS[id]}</span><span class="act-label" data-actlabel="${id}">${label}</span>`;
+      b.innerHTML = `<span class="act-label" data-actlabel="${id}">${label}</span>`;
       b.addEventListener('click', () => this.hooks.onAction(id));
       bar.appendChild(b);
     }
@@ -284,15 +310,18 @@ export class UI {
   refreshLabels(muted?: boolean, measure?: boolean) {
     document.title = this.dict.pageTitle;
     $('#btn-lang').textContent = this.dict.langBtn;
-    $('#btn-book').innerHTML = `${ICONS.book}<span>${this.dict.book}</span>`;
-    $('#btn-home').innerHTML = ICONS.home;
+    $('#btn-book').textContent = this.dict.book;
+    $('#btn-home').textContent = this.dict.backHome;
     if (muted !== undefined) this.setMuted(muted);
     if (measure !== undefined) this.setMeasure(measure);
   }
 
-  setMuted(m: boolean) { $('#btn-mute').innerHTML = m ? ICONS.soundOff : ICONS.sound; }
+  setMuted(m: boolean) {
+    $('#btn-mute').textContent = m ? this.dict.mutedBtn : this.dict.soundBtn;
+    $('#btn-mute').classList.toggle('off', m);
+  }
   setMeasure(on: boolean) {
-    $('#btn-measure').innerHTML = ICONS.jigger;
+    $('#btn-measure').textContent = this.dict.jigger;
     $('#btn-measure').classList.toggle('off', !on);
     $('#btn-measure').title = on ? this.dict.measureOn : this.dict.measureOff;
   }
@@ -406,9 +435,9 @@ export class UI {
     ];
     card.innerHTML = `
       <div class="book-head">
-        <h2 class="serif"><span class="bh-icon">${ICONS.book}</span>${this.dict.bookTitle}</h2>
+        <h2>${this.dict.bookTitle}</h2>
         <span class="progress">${this.dict.progress(discovered, RECIPES.length)}</span>
-        <button id="btn-book-close" class="mini-btn">✕ ${this.dict.close}</button>
+        <button id="btn-book-close" class="mini-btn">× ${this.dict.close}</button>
       </div>
       <div class="book-tabs">
         ${tabs.map(([id, label]) => `<button class="book-tab${this.bookTab === id ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('')}
@@ -441,31 +470,32 @@ export class UI {
       const cv = document.createElement('canvas');
       cv.width = 56; cv.height = 76;
       cv.className = 'book-glass';
-      drawMiniDrink(cv, r.glass, got ? this.recipeColor(r) : 'rgba(30,26,42,0.9)', false, 'none', !got);
+      drawMiniDrink(cv, r.glass, got ? this.recipeColor(r) : 'rgba(52,36,30,0.9)', false, 'none', !got);
       const info = document.createElement('div');
       info.className = 'book-info';
-      if (got) {
-        const items = r.items
-          .map((it) => {
-            const ing = INGREDIENTS.find((i) => i.id === it.id)!;
-            const amt = ing.unit === 'ml' ? this.dict.mlSuffix(it.amount) : ing.unit === 'dash' ? this.dict.dashSuffix(it.amount) : this.dict.leafSuffix(it.amount);
-            return `${this.ingName(ing)} ${amt}`;
-          })
-          .join(' · ');
-        const tech = r.tech.map((t) => this.dict.techLabel[t]).join('/') + (r.muddle ? ` · ${this.dict.muddleMark}` : '');
-        info.innerHTML = `
-          <div class="book-name serif">${escapeHtml(this.recipeName(r))}
-            <span class="book-stars">${'★'.repeat(got.stars)}${'<span class="dim">☆</span>'.repeat(Math.max(0, 3 - got.stars))}</span>
-          </div>
-          <div class="book-recipe">${escapeHtml(this.dict.recipeOf)}: ${escapeHtml(items)} 〔${escapeHtml(tech)}〕</div>
-          <div class="book-lore">${escapeHtml(this.isZh() ? r.loreZh : r.loreEn)}</div>
-        `;
-      } else {
-        info.innerHTML = `
-          <div class="book-name">${this.dict.lockedName}</div>
-          <div class="book-lore">${escapeHtml(this.isZh() ? r.hintZh : r.hintEn)}</div>
-        `;
-      }
+      // 配方手册：用料与做法从一开始就写明白
+      const items = r.items
+        .map((it) => {
+          const ing = INGREDIENTS.find((i) => i.id === it.id)!;
+          const amt = ing.unit === 'ml' ? this.dict.mlSuffix(it.amount) : this.dict.leafSuffix(it.amount);
+          return `${this.ingName(ing)} ${amt}`;
+        })
+        .join(' + ');
+      const tech = [
+        r.tech.map((t) => this.dict.techLabel[t]).join('/'),
+        this.dict.iceLabels[r.ice],
+        r.muddle ? this.dict.muddleMark : '',
+      ].filter(Boolean).join(' · ');
+      const badge = got
+        ? `<span class="book-stars">${'★'.repeat(got.stars)}${'<span class="dim">☆</span>'.repeat(Math.max(0, 3 - got.stars))}</span>`
+        : `<span class="nm-tag">${escapeHtml(this.dict.notMade)}</span>`;
+      const freeTag = r.alcoholFree ? '<span class="soft-tag">0%</span>' : '';
+      info.innerHTML = `
+        <div class="book-name">${escapeHtml(this.recipeName(r))}${freeTag} ${badge}</div>
+        <div class="book-recipe">${escapeHtml(items)}</div>
+        <div class="book-tech">〔 ${escapeHtml(tech)} 〕</div>
+        ${got ? `<div class="book-lore">${escapeHtml(this.isZh() ? r.loreZh : r.loreEn)}</div>` : ''}
+      `;
       row.append(cv, info);
       body.appendChild(row);
     }
@@ -529,8 +559,8 @@ export class UI {
   showTitle(stats: { money: number; nights: number; discovered: number; total: number }) {
     const card = $('#title-card');
     card.innerHTML = `
-      <div class="title-mark">${ICONS.martini}</div>
-      <h1 class="title-logo serif">${escapeHtml(this.dict.barName)}</h1>
+      <div class="title-mark">${PIXEL_MARTINI}</div>
+      <h1 class="title-logo">${escapeHtml(this.dict.barName)}</h1>
       <div class="title-sub">THE TIPSY SHAKER</div>
       <div class="title-rule"><i></i><b>◆</b><i></i></div>
       <p class="title-tagline">${escapeHtml(this.dict.tagline)}</p>
@@ -542,11 +572,11 @@ export class UI {
         <span>${escapeHtml(this.dict.discoveredShort(stats.discovered, stats.total))}</span>
       </div>
       <div class="title-btns">
-        <button id="btn-night" class="primary title-btn">${ICONS.moon}<span>${escapeHtml(this.dict.startNight)}</span></button>
-        <button id="btn-free" class="title-btn">${ICONS.flask}<span>${escapeHtml(this.dict.freePlay)}</span></button>
+        <button id="btn-night" class="primary title-btn">${escapeHtml(this.dict.startNight)}</button>
+        <button id="btn-free" class="title-btn">${escapeHtml(this.dict.freePlay)}</button>
       </div>
       <div class="title-small">
-        <button id="btn-title-book" class="mini-btn icon-btn">${ICONS.book}<span>${escapeHtml(this.dict.book)}</span></button>
+        <button id="btn-title-book" class="mini-btn">${escapeHtml(this.dict.book)}</button>
         <button id="btn-title-lang" class="mini-btn">${escapeHtml(this.dict.langBtn)}</button>
       </div>
       <div class="title-howto">${this.dict.introLines.map((l) => `<p><b>◆</b>${escapeHtml(l)}</p>`).join('')}</div>
@@ -569,14 +599,19 @@ export class UI {
     const el = $('#customer');
     el.classList.remove('hidden');
     el.innerHTML = `
-      <div class="cust-head">
-        <span class="cust-emoji">${v.emoji}</span>
-        <span class="cust-name serif">${escapeHtml(v.name)}</span>
-        <span class="cust-progress">${escapeHtml(v.progress)}</span>
+      <div class="tk-head">
+        <span class="tk-title">${escapeHtml(this.dict.ticketTitle)}</span>
+        <span class="tk-no">${escapeHtml(v.progress)}</span>
       </div>
-      <div class="cust-bubble">${escapeHtml(v.dialogue)}</div>
-      ${v.hint ? `<div class="cust-hint">${escapeHtml(v.hint)}</div>` : ''}
-      ${v.chips.length ? `<div class="cust-chips">${v.chips.map((c) => `<span class="cust-chip">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
+      <div class="tk-cust">
+        <span class="tk-emoji">${v.emoji}</span>
+        <span class="tk-name">${escapeHtml(v.name)}</span>
+      </div>
+      <div class="tk-dash"></div>
+      <div class="tk-body">“${escapeHtml(v.dialogue)}”</div>
+      ${v.chips.length ? `<div class="tk-items">${v.chips.map((c) => `<div class="tk-item">· ${escapeHtml(c)}</div>`).join('')}</div>` : ''}
+      <div class="tk-dash"></div>
+      <div class="tk-foot">${escapeHtml(this.dict.ticketThanks)}</div>
     `;
     el.classList.remove('pop-in');
     void el.offsetWidth;

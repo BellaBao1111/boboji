@@ -23,7 +23,10 @@ export interface CustomerType {
   id: string;
   emoji: string;
   name: L;
+  /** 说心情的点单 */
   orders: L[];
+  /** 直接报酒名的点单（{r} 会替换成酒名） */
+  namedOrders: L[];
   great: L[];
   ok: L[];
   bad: L[];
@@ -39,8 +42,6 @@ export interface Order {
   type: CustomerType;
   dialogue: L;
   constraints: OrderConstraints;
-  /** 老饕点的酒未解锁时附带的谜语 */
-  hint?: L;
 }
 
 const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -53,6 +54,9 @@ export const CUSTOMER_TYPES: CustomerType[] = [
       { zh: '方案改了八遍还是第一版好……来杯烈的，让我忘了今天。', en: 'Eight revisions later, version one won. Something strong — help me forget today.' },
       { zh: '刚下班。别问，问就是烈的，快。', en: 'Just got off work. Don\'t ask. Strong. Fast.' },
       { zh: '老板说"这周辛苦了"，然后发来了周末排班表。烈的，谢谢。', en: 'Boss said "great hustle this week", then sent the weekend schedule. Strong one, please.' },
+    ],
+    namedOrders: [
+      { zh: '别让我做选择了，今天选够了。直接来杯【{r}】。', en: 'No more decisions today. Just a {r}.' },
     ],
     great: [
       { zh: '呼——活过来了。明天继续搬砖！', en: 'Whew — I\'m alive again. Back to the grind tomorrow!' },
@@ -68,6 +72,9 @@ export const CUSTOMER_TYPES: CustomerType[] = [
       { zh: '来杯苦一点的。我想清醒地难过一会儿。', en: 'Something bitter. I\'d like to be sad with a clear head.' },
       { zh: '要有回味的、复杂的，像一首没写完的诗。', en: 'Something complex, with an aftertaste — like an unfinished poem.' },
     ],
+    namedOrders: [
+      { zh: '来杯【{r}】吧，我喜欢它背后的故事。', en: 'A {r}, please — I like the story behind it.' },
+    ],
     great: [
       { zh: '这苦味……像极了我未发表的诗集。收藏了。', en: 'This bitterness… tastes like my unpublished poems. Saved.' },
       { zh: '我要为这杯酒写三百字小作文。', en: 'This drink deserves a three-hundred-word essay.' },
@@ -79,8 +86,11 @@ export const CUSTOMER_TYPES: CustomerType[] = [
   {
     id: 'jianshen', emoji: '💪', name: { zh: '健身达人', en: 'Gym Rat' }, tipBase: 22,
     orders: [
-      { zh: '明早五点撸铁！无！酒！精！要冰要气泡，谢谢。', en: 'Iron at 5 a.m.! NO. ALCOHOL. Cold and fizzy, thanks.' },
+      { zh: '明早五点举铁！无！酒！精！要冰要气泡，谢谢。', en: 'Iron at 5 a.m.! NO. ALCOHOL. Cold and fizzy, thanks.' },
       { zh: '教练说了滴酒不沾。给我整杯清爽带泡的。', en: 'Coach says zero alcohol. Something crisp and bubbly.' },
+    ],
+    namedOrders: [
+      { zh: '来杯【{r}】！照着做，别偷偷给我加酒！', en: 'A {r}! By the book — and no sneaky alcohol!' },
     ],
     great: [
       { zh: '清爽！蛋白粉都没这么顺口！明天加练两组！', en: 'Crisp! Smoother than my protein shake! Two extra sets tomorrow!' },
@@ -92,7 +102,8 @@ export const CUSTOMER_TYPES: CustomerType[] = [
   },
   {
     id: 'laotao', emoji: '🧐', name: { zh: '老饕', en: 'Connoisseur' }, tipBase: 40,
-    orders: [
+    orders: [],
+    namedOrders: [
       { zh: '听说你会调【{r}】？让我尝尝正不正宗。', en: 'I hear you can make a proper {r}. Prove it.' },
       { zh: '别的不要，就要一杯【{r}】，按老规矩来。', en: 'Nothing fancy — a {r}, done the old way.' },
     ],
@@ -110,6 +121,9 @@ export const CUSTOMER_TYPES: CustomerType[] = [
       { zh: '分手了。给我一杯和心情一样苦、一样上头的。', en: 'We broke up. Something as bitter and dizzying as my mood.' },
       { zh: '不要甜的。今天不配。', en: 'Nothing sweet. I don\'t deserve it today.' },
     ],
+    namedOrders: [
+      { zh: '一杯【{r}】。别问为什么，是那个人以前常点的。', en: 'A {r}. Don\'t ask — it was their usual.' },
+    ],
     great: [
       { zh: '苦得刚刚好……眼泪都被压回去了。谢谢。', en: 'Bitter in exactly the right way… it pushed the tears back down. Thank you.' },
     ],
@@ -122,6 +136,9 @@ export const CUSTOMER_TYPES: CustomerType[] = [
     orders: [
       { zh: '再来一杯最烈的！我没醉！我清醒得很！（扶住吧台）', en: 'One more, the strongest! I\'m not drunk! Totally clear-headed! (grabs the counter)' },
       { zh: '烈的烈的烈的！今晚不醉不归！', en: 'Strong strong strong! No sober exits tonight!' },
+    ],
+    namedOrders: [
+      { zh: '【{r}】！！传说中的那杯！给我整上！', en: 'A {r}!! The legendary one! Hit me!' },
     ],
     great: [
       { zh: '哈！够劲！你是懂酒的！', en: 'Ha! That\'s the stuff! You get it!' },
@@ -137,6 +154,9 @@ export const CUSTOMER_TYPES: CustomerType[] = [
       { zh: '幺妹儿，整杯巴适的嘛！不要太凶，安逸就行～', en: 'Hey friend, make it bashi! Nothing too fierce — just cozy.' },
       { zh: '随便你调，好喝就得行！莫拿白开水糊弄我哈。', en: 'Mix whatever — as long as it\'s tasty! Just don\'t hand me plain water.' },
     ],
+    namedOrders: [
+      { zh: '朋友喊我一定要试哈【{r}】，说是巴适得很！', en: 'My friend insists I try the {r} — says it\'s proper bashi!' },
+    ],
     great: [
       { zh: '巴适得板！！比钵钵鸡还安逸！', en: 'Bashi de ban!! Cozier than boboji!' },
       { zh: '雄起！这杯我要发到家族群头去。', en: 'Xiongqi! This one\'s going straight to the family group chat.' },
@@ -150,6 +170,9 @@ export const CUSTOMER_TYPES: CustomerType[] = [
     orders: [
       { zh: '要红色系的！好看的！我要发朋友圈！', en: 'Something RED! Something gorgeous! It\'s going on my feed!' },
       { zh: '味道随意，颜值必须在线，最好是粉粉红红的那种。', en: 'Taste is whatever — looks are everything. Pink-ish red, ideally.' },
+    ],
+    namedOrders: [
+      { zh: '网上都说【{r}】超出片！来一杯我要拍照！', en: 'The internet says a {r} is SO photogenic! One for the camera!' },
     ],
     great: [
       { zh: '这也太出片了吧！！等我拍完，先别动它！', en: 'SO photogenic!! Nobody touch it until I\'m done shooting!' },
@@ -174,22 +197,28 @@ export function makeNight(n: number, discovered: string[]): Order[] {
 
 function makeOrder(type: CustomerType, discovered: string[]): Order {
   const constraints = type.gen();
-  let dialogue = pick(type.orders);
-  let hint: L | undefined;
-  if (type.id === 'laotao') {
-    // 老饕点名：优先考已解锁的酒；一半概率抽全表（没解锁就送谜语，当发现引导）
-    const fromDiscovered = discovered.length >= 3 && Math.random() < 0.6;
-    const recipe: Recipe = fromDiscovered
-      ? RECIPE_BY_ID[pick(discovered)]
-      : pick(RECIPES);
-    constraints.recipeId = recipe.id;
-    dialogue = {
-      zh: dialogue.zh.replace('{r}', recipe.zh),
-      en: dialogue.en.replace('{r}', recipe.en),
-    };
-    if (!discovered.includes(recipe.id)) hint = { zh: `（他压低声音提示道：${recipe.hintZh}）`, en: `(He leans in: ${recipe.hintEn})` };
+  // 老饕必点名；其他客人 30% 概率直接报酒名（酒谱里有配方可查）
+  const named = type.id === 'laotao' || Math.random() < 0.3;
+  if (!named) {
+    return { type, dialogue: pick(type.orders), constraints };
   }
-  return { type, dialogue, constraints, hint };
+  let recipe: Recipe;
+  if (type.id === 'jianshen') {
+    recipe = pick(RECIPES.filter((x) => x.alcoholFree));
+  } else if (type.id === 'weixun' && Math.random() < 0.5) {
+    recipe = RECIPE_BY_ID.liit; // 微醺客的传说：长岛冰茶
+  } else if (type.id === 'laotao' && discovered.length >= 3 && Math.random() < 0.6) {
+    recipe = RECIPE_BY_ID[pick(discovered)];
+  } else {
+    recipe = pick(RECIPES);
+  }
+  constraints.recipeId = recipe.id;
+  const tpl = pick(type.namedOrders);
+  const dialogue = {
+    zh: tpl.zh.replace('{r}', recipe.zh),
+    en: tpl.en.replace('{r}', recipe.en),
+  };
+  return { type, dialogue, constraints };
 }
 
 // ---------------- 评分 ----------------
@@ -294,7 +323,7 @@ export function orderChips(order: Order, lang: Lang): string[] {
   const c = order.constraints;
   if (c.recipeId) {
     const r = RECIPE_BY_ID[c.recipeId];
-    chips.push(zh ? `点名 · ${r.zh}` : `Order · ${r.en}`);
+    chips.push(`1 × ${zh ? r.zh : r.en}`);
     return chips;
   }
   if (c.alcoholFree) chips.push(zh ? '无酒精' : 'Zero-proof');

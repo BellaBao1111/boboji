@@ -72,6 +72,13 @@ export interface Dict {
   recipeOf: string;
   techLabel: Record<string, string>;
   muddleMark: string;
+  notMade: string;
+  iceLabels: Record<'cube' | 'none' | 'any', string>;
+  ticketTitle: string;
+  ticketThanks: string;
+  jigger: string;
+  soundBtn: string;
+  mutedBtn: string;
   // 引导
   introTitle: string;
   introLines: string[];
@@ -174,7 +181,14 @@ export const DICTS: Record<Lang, Dict> = {
     bestStars: '最佳',
     recipeOf: '配方',
     techLabel: { build: '直调', stir: '搅拌', shake: '摇和' },
-    muddleMark: '需捣',
+    muddleMark: '要捣',
+    notMade: '还没调过',
+    iceLabels: { cube: '加冰', none: '不加冰', any: '冰随意' },
+    ticketTitle: '点单',
+    ticketThanks: '· 谢 谢 惠 顾 ·',
+    jigger: '量杯',
+    soundBtn: '声音',
+    mutedBtn: '静音',
     introTitle: '欢迎来到摇摇酒馆',
     introLines: [
       '按住瓶子往杯里倒，倒多倒少全看手感',
@@ -276,6 +290,13 @@ export const DICTS: Record<Lang, Dict> = {
     recipeOf: 'Recipe',
     techLabel: { build: 'Build', stir: 'Stir', shake: 'Shake' },
     muddleMark: 'Muddle',
+    notMade: 'Not mixed yet',
+    iceLabels: { cube: 'With ice', none: 'No ice', any: 'Ice: any' },
+    ticketTitle: 'ORDER',
+    ticketThanks: '· THANK YOU ·',
+    jigger: 'Jigger',
+    soundBtn: 'Sound',
+    mutedBtn: 'Muted',
     introTitle: 'Welcome to The Tipsy Shaker',
     introLines: [
       'Hold a bottle to pour — how much is up to your hands',
