@@ -324,7 +324,7 @@ const KIND_STICK: Partial<Record<SkewerKind, string>> = {
   golden: '#f7c649',
   bomb: '#8e1a0e',
   chili: '#e03a1f',
-  ghost: '#cfd8e8',
+  ghost: '#c9b0e8', // 淡紫：别和"冰"混淆，幽灵感靠渐隐动画
   magnet: '#aeb6bd',
 };
 
