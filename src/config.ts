@@ -51,6 +51,7 @@ export const RULES = {
   chiliFrenzy: 5, // 魔鬼椒双倍分持续秒数
   ghostPeriod: 4.4, // 幽灵签显隐周期
   ghostHidden: 1.1, // 其中隐身秒数（含淡入淡出）
+  deadlockConfirm: 2, // 死锁连续确认次数（防止物理沉降瞬间误判），确认后自动帮吃一根
   // 竹签币
   coinPerPull: 1,
   coinPerGolden: 8,
@@ -58,7 +59,7 @@ export const RULES = {
   coinStarBonus: 10, // 每颗星的过关奖励
 };
 
-export type SkewerKind = 'normal' | 'golden' | 'ice' | 'bomb' | 'chili' | 'ghost' | 'magnet';
+export type SkewerKind = 'normal' | 'golden' | 'bomb' | 'chili' | 'ghost' | 'magnet';
 
 export type ModId = 'fog' | 'night' | 'spin' | 'double' | 'eater';
 

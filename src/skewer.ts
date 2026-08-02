@@ -69,8 +69,6 @@ export class Skewer {
   stickColor: THREE.Color;
 
   // 特殊签状态
-  iceCracked = false;
-  private iceShell: THREE.Mesh | null = null;
   fuseT = -1; // 炮仗剩余引线秒数（game 驱动），<0 = 未点燃/非炮仗
   exploded = false;
   ghostVisible = true; // 幽灵签当前是否可拔
@@ -144,7 +142,6 @@ export class Skewer {
     // 串食材：从签尖往下排
     const n = type.count[0] + Math.round(rnd() * (type.count[1] - type.count[0]));
     let y = this.len / 2 - 0.16;
-    let foodTopY = y;
     for (let i = 0; i < n; i++) {
       const piece = type.make(rnd);
       y -= piece.span / 2;
@@ -176,28 +173,9 @@ export class Skewer {
       }
       y -= piece.span / 2 + 0.024;
     }
-    const foodBotY = y + 0.024;
 
     // ---- 特殊签专属装饰 ----
-    if (kind === 'ice') {
-      // 冰壳：罩住整段食材的半透明胶囊，敲一下才碎
-      const h = Math.max(0.3, foodTopY - foodBotY + 0.16);
-      const shellGeom = new THREE.CapsuleGeometry(0.27, h, 6, 14);
-      const shellMat = new THREE.MeshPhysicalMaterial({
-        color: '#cfeaff',
-        transparent: true,
-        opacity: 0.45,
-        roughness: 0.08,
-        metalness: 0,
-        clearcoat: 1,
-        clearcoatRoughness: 0.1,
-        depthWrite: false,
-      });
-      this.iceShell = new THREE.Mesh(shellGeom, shellMat);
-      this.iceShell.position.y = (foodTopY + foodBotY) / 2;
-      this.group.add(this.iceShell);
-      this.pickMeshes.push(this.iceShell);
-    } else if (kind === 'bomb') {
+    if (kind === 'bomb') {
       // 炮仗：签顶一个红金小炮仗
       const cracker = new THREE.Mesh(
         new THREE.CylinderGeometry(0.055, 0.055, 0.2, 10),
@@ -237,9 +215,8 @@ export class Skewer {
     for (const m of this.pickMeshes) m.userData.skewerId = id;
     this.group.userData.skewerId = id;
 
-    // 描边壳（共享几何体，默认隐藏；冰壳不描边）
+    // 描边壳（共享几何体，默认隐藏）
     for (const m of this.pickMeshes) {
-      if (m === this.iceShell) continue;
       const o = new THREE.Mesh(m.geometry, this.outlineMat);
       o.position.copy(m.position);
       o.quaternion.copy(m.quaternion);
@@ -248,18 +225,6 @@ export class Skewer {
       m.parent!.add(o);
       this.outlineMeshes.push(o);
     }
-  }
-
-  /** 敲碎冰壳。返回冰壳世界坐标（撒碎冰粒子用） */
-  crackIce(): THREE.Vector3 | null {
-    if (!this.iceShell || this.iceCracked) return null;
-    this.iceCracked = true;
-    const p = new THREE.Vector3();
-    this.iceShell.getWorldPosition(p);
-    this.iceShell.visible = false;
-    const idx = this.pickMeshes.indexOf(this.iceShell);
-    if (idx >= 0) this.pickMeshes.splice(idx, 1);
-    return p;
   }
 
   /** 点击反馈闪烁 */
@@ -357,7 +322,6 @@ const BOMB_COLOR = new THREE.Color('#ff3820');
 // 特殊签的专属签色（一眼认出）
 const KIND_STICK: Partial<Record<SkewerKind, string>> = {
   golden: '#f7c649',
-  ice: '#bfe6ff',
   bomb: '#8e1a0e',
   chili: '#e03a1f',
   ghost: '#cfd8e8',

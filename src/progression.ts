@@ -37,11 +37,10 @@ export function foodUnlockStage(id: string): number {
 
 // ---------- 特殊签解锁 ----------
 export const SPECIAL_UNLOCK: [SkewerKind, number][] = [
-  ['ice', 5],
-  ['bomb', 7],
-  ['chili', 9],
-  ['ghost', 12],
-  ['magnet', 15],
+  ['bomb', 5],
+  ['chili', 8],
+  ['ghost', 11],
+  ['magnet', 14],
 ];
 
 export function specialsUnlockedBy(n: number): SkewerKind[] {
@@ -168,9 +167,7 @@ export function stageLevel(n: number): LevelDef {
       chosen.push(k);
     }
     for (const k of chosen) {
-      const amt =
-        k === 'ice' ? 2 + ((rnd() * 2) | 0) : k === 'bomb' ? 1 + ((rnd() * 2) | 0) : k === 'ghost' ? 1 + ((rnd() * 2) | 0) : 1;
-      specials[k] = amt;
+      specials[k] = k === 'bomb' || k === 'ghost' ? 1 + ((rnd() * 2) | 0) : 1;
     }
     // 新解锁的签种首碗必登场（预告要兑现）
     for (const k of specialUnlockedAt(n)) specials[k] = specials[k] ?? 1;

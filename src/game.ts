@@ -39,7 +39,7 @@ const B_DUR = 0.42; // 飞向嘴边
 const POP_GAP = 0.062; // 逐个吃
 const D_DUR = 0.3; // 光签入筒
 
-const SPECIAL_KINDS: SkewerKind[] = ['ice', 'bomb', 'chili', 'ghost', 'magnet'];
+const SPECIAL_KINDS: SkewerKind[] = ['bomb', 'chili', 'ghost', 'magnet'];
 
 interface PullAnim {
   sk: Skewer;
@@ -100,6 +100,7 @@ export class Game {
   private hintCheckT = 0;
   private submergedPingT = 0;
   private deadlockT = 0;
+  private deadlockHits = 0;
   private lastTickSec = -1;
   private goalTipT = 0;
   private endlessGoldenCounter = 0;
@@ -372,15 +373,6 @@ export class Game {
   tryPick(sk: Skewer, hitPoint?: THREE.Vector3) {
     if (this.state !== 'play' || sk.removed || sk.pulling || !sk.body) return;
     if (sk.kind === 'ghost' && !sk.ghostVisible) return; // 隐身点不到
-    // 冰冻签：第一下敲冰（无论压没压住），不扣时不断连击
-    if (sk.kind === 'ice' && !sk.iceCracked) {
-      const p = sk.crackIce();
-      sfx.crack();
-      if (p) this.particles.crumbs(p, '#cfeaff', 16);
-      this.floats.spawn(hitPoint ?? sk.group.position, t().iceCrack, 'good');
-      this.idleT = 0;
-      return;
-    }
     // 磁签：压住也能吸出来
     if (sk.kind === 'magnet') {
       const pinned = this.phys.findBlockers(sk).length > 0;
@@ -401,11 +393,6 @@ export class Game {
   }
 
   private succeedPick(sk: Skewer) {
-    // 帮吃/强拔可能咬到没敲开的冰壳：直接咬碎
-    if (sk.kind === 'ice' && !sk.iceCracked) {
-      const p = sk.crackIce();
-      if (p) this.particles.crumbs(p, '#cfeaff', 10);
-    }
     this.combo++;
     this.comboTimer = RULES.comboWindow;
     this.bestCombo = Math.max(this.bestCombo, this.combo);
@@ -659,6 +646,7 @@ export class Game {
     this.cupAssign = 0;
     this.idleT = 0;
     this.deadlockT = 0;
+    this.deadlockHits = 0;
     this.goalTipT = 0;
     this.lastTickSec = -1;
     this.endlessGoldenCounter = 0;
@@ -1053,18 +1041,29 @@ export class Game {
     }
   }
 
+  /** 死锁判定：剩下的签全部互相压着谁都拔不动 → 友友自动帮吃一根解开（连续确认防止物理沉降瞬间误判） */
   private updateDeadlock(dt: number) {
     this.deadlockT += dt;
     if (this.deadlockT < 1.2) return;
     this.deadlockT = 0;
-    if (this.spawnQueue.length > 0 || this.pulls.length > 0) return;
-    const alive = this.aliveList();
-    if (alive.length === 0) return;
-    if (this.phys.freeList(alive).length === 0 && this.helpsLeft <= 0 && this.helperQueue.length === 0) {
-      this.helpsLeft = 1;
-      this.ui.setHelps(this.helpsLeft, true);
-      this.floats.spawnScreen(0.5, 0.62, t().deadlockGift, 'good');
+    if (this.spawnQueue.length > 0 || this.pulls.length > 0 || this.helperQueue.length > 0) {
+      this.deadlockHits = 0;
+      return;
     }
+    const alive = this.aliveList();
+    if (alive.length === 0 || this.phys.freeList(alive).length > 0) {
+      this.deadlockHits = 0;
+      return;
+    }
+    this.deadlockHits++;
+    if (this.deadlockHits < RULES.deadlockConfirm) return;
+    this.deadlockHits = 0;
+    // 吃最上面那根：一定能解开压住它下面签的环
+    const top = [...alive].sort((a, b) => b.group.position.y - a.group.position.y)[0];
+    this.floats.spawnScreen(0.5, 0.62, t().deadlockGift, 'good');
+    sfx.slosh();
+    this.env.shake(0.35);
+    this.succeedPick(top);
   }
 
   // ---------- 特殊签逐帧逻辑 ----------

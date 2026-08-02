@@ -67,7 +67,6 @@ export interface Dict {
   bombBoom: (sec: number) => string;
   chiliOn: string;
   magnetPull: string;
-  iceCrack: string;
   // 暂停
   pauseTitle: string;
   pauseSub: string;
@@ -203,14 +202,12 @@ const ZH: Dict = {
   },
   specialNames: {
     golden: '黄金卤蛋',
-    ice: '冰冻签',
     bomb: '炮仗签',
     chili: '魔鬼椒',
     ghost: '幽灵签',
     magnet: '磁签',
   },
   specialTips: {
-    ice: '🧊 冰冻签：先敲一下碎冰，再拔！',
     bomb: '🧨 炮仗签：引线烧完会炸，抢先拔掉 +5s！',
     chili: '🌶️ 魔鬼椒：拔掉后 5 秒全场双倍分！',
     ghost: '👻 幽灵签：时隐时现，显形才拔得到！',
@@ -266,7 +263,6 @@ const ZH: Dict = {
   bombBoom: (sec) => `炸了！-${sec}s`,
   chiliOn: '上头了！双倍分 ×5s',
   magnetPull: '吸出来了！',
-  iceCrack: '冰碎了！再点一下',
   pauseTitle: '歇口气',
   pauseSub: '汤还热着，签签不等人～',
   resume: '继续吃',
@@ -401,7 +397,7 @@ const ZH: Dict = {
     {
       ico: '🥢',
       title: '卡住了喊友友帮吃',
-      body: '成都友友出手，直接替你吃掉最上面 3 签——压住的也照吃！真死锁了免费送。',
+      body: '成都友友出手，直接替你吃掉最上面 3 签——压住的也照吃！真出现签签互相压死的死锁，友友会自动帮吃一根解开。',
     },
     {
       ico: '🎋',
@@ -455,14 +451,12 @@ const EN: Dict = {
   },
   specialNames: {
     golden: 'Golden Egg',
-    ice: 'Ice Skewer',
     bomb: 'Firecracker',
     chili: 'Devil Pepper',
     ghost: 'Ghost Skewer',
     magnet: 'Magnet Skewer',
   },
   specialTips: {
-    ice: '🧊 Ice Skewer: tap once to crack, tap again to pull!',
     bomb: '🧨 Firecracker: pull before the fuse burns out for +5s!',
     chili: '🌶️ Devil Pepper: 5 seconds of double score after pulling!',
     ghost: '👻 Ghost Skewer: only pullable while visible!',
@@ -518,7 +512,6 @@ const EN: Dict = {
   bombBoom: (sec) => `BOOM! -${sec}s`,
   chiliOn: 'ON FIRE! ×2 score, 5s',
   magnetPull: 'Slurped out!',
-  iceCrack: 'Cracked! Tap again',
   pauseTitle: 'Take a Breath',
   pauseSub: "Soup's still hot, skewers won't wait~",
   resume: 'Keep Eating',
@@ -653,7 +646,7 @@ const EN: Dict = {
     {
       ico: '🥢',
       title: 'Stuck? Call your friends',
-      body: 'A Chengdu friend eats the top 3 skewers for you — pinned or not! A true gridlock earns a free one.',
+      body: 'A Chengdu friend eats the top 3 skewers for you — pinned or not! And if the pile truly gridlocks, a friend automatically takes one bite to unjam it.',
     },
     {
       ico: '🎋',

@@ -18,7 +18,7 @@ A basin of scalding chili broth, dozens of bamboo skewers criss-crossed on top o
 - 🎯 **Hover (desktop) or press-and-hold (mobile)** — the targeted skewer gets a bright orange outline; release to pull
 - ⛔ Tapping a **pinned skewer** costs 2 seconds; the blockers flash red to show you why
 - ⚡ Quick **combos** earn bonus points and Sichuan-style praise ("Bashi!")
-- 🥢 Stuck? **Call your friends**: a Chengdu friend eats the top 3 skewers for you, pinned or not (true gridlock earns a free one)
+- 🥢 Stuck? **Call your friends**: a Chengdu friend eats the top 3 skewers for you, pinned or not (a true gridlock auto-resolves — a friend takes one bite for free)
 - 💪 **So close?** When you time out with just a few skewers left, the boss hands you 10 extra seconds — first one's on the house
 - 🌐 **Bilingual**: Chinese by default, one-tap English toggle on the title screen (remembered)
 
@@ -29,7 +29,6 @@ Bowls never run out: clear one and the next is served, procedurally generated wi
 | Trick skewer | Rule |
 | --- | --- |
 | 🌟 Golden Egg | +8s, +300 pts |
-| 🧊 Ice Skewer | tap once to crack, again to pull |
 | 🧨 Firecracker | pull before the fuse burns: +5s; boom: −5s |
 | 🌶️ Devil Pepper | 5 seconds of double score |
 | 👻 Ghost Skewer | only pullable while visible |
@@ -62,7 +61,7 @@ Stars (★★★) are awarded by remaining time; everything is saved in localSto
 
 ### Anti-frustration design
 
-Blockers flash red on a failed tap, an idle hint glows a pullable skewer (ripples point to submerged ones), deadlock detection grants a free helper bite, escaped skewers are fished back into the bowl, and tapping empty broth makes playful ripples.
+Blockers flash red on a failed tap, an idle hint glows a pullable skewer (ripples point to submerged ones), a mutually-pinned gridlock is auto-resolved by a friend eating one skewer, escaped skewers are fished back into the bowl, and tapping empty broth makes playful ripples.
 
 ## Development
 
@@ -100,7 +99,7 @@ Pushing to `main` auto-builds and deploys to GitHub Pages (see `.github/workflow
 - 🎯 **悬停（电脑）/ 按住（手机）**：瞄准的签会亮橙色描边，松手才拔
 - ⛔ 点到**被压住的签**：扣 2 秒，压住它的"元凶"会闪红光提示
 - ⚡ 手快**连击**有额外加分，连到位川妹儿开夸：巴适！安逸～雄起！
-- 🥢 卡住了喊**友友帮吃**：直接替你吃掉最上面 3 签（压住的也照吃），真死锁了免费送
+- 🥢 卡住了喊**友友帮吃**：直接替你吃掉最上面 3 签（压住的也照吃）；签签互相压死的死锁会被自动识别，友友帮吃一根解开
 - 💪 **就差一点？** 超时时只剩几签，老板会再送你 10 秒——第一次免费
 - 🌐 中英双语：默认中文，首页一键切换 English（选择会记住）
 
@@ -111,7 +110,6 @@ Pushing to `main` auto-builds and deploys to GitHub Pages (see `.github/workflow
 | 特殊签 | 规则 |
 | --- | --- |
 | 🌟 黄金卤蛋 | +8 秒 +300 分 |
-| 🧊 冰冻签 | 先敲一下碎冰，再拔 |
 | 🧨 炮仗签 | 引线烧完会炸：抢拔 +5s，炸了 −5s |
 | 🌶️ 魔鬼椒 | 拔掉后 5 秒全场双倍分 |
 | 👻 幽灵签 | 时隐时现，显形才拔得到 |
@@ -144,7 +142,7 @@ Pushing to `main` auto-builds and deploys to GitHub Pages (see `.github/workflow
 
 ### 防挫败设计
 
-被压时闪红光标出元凶、静默提示可拔的签、死锁检测免费送"帮吃"、飞出碗外的签自动捞回、点空汤面也能拨出涟漪解压。
+被压时闪红光标出元凶、静默提示可拔的签、互相压死的死锁自动帮吃一根解开、飞出碗外的签自动捞回、点空汤面也能拨出涟漪解压。
 
 ## 本地开发
 
