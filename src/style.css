@@ -1237,6 +1237,13 @@ body {
 }
 .food-cell.dim { opacity: 0.45; }
 .food-cell .fc-emoji { font-size: 26px; display: block; }
+.food-cell .fc-img {
+  width: 46px;
+  height: 46px;
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 3px 4px rgba(60, 20, 8, 0.3));
+}
 .food-cell .fc-name { display: block; font-size: 12px; color: var(--ink); margin-top: 2px; }
 .food-cell .fc-count { display: block; font-size: 10px; color: #9a7a50; margin-top: 1px; }
 .ach-grid {

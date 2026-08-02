@@ -78,6 +78,9 @@ export interface AchieveCtx {
   dailyStreak?: number;
 }
 
+// 全食材图鉴成就：12 种正餐食材（金签/魔鬼椒是特殊签，不计入）
+const FOODIE_IDS = ['egg', 'lotus', 'kelp', 'gizzard', 'carrot', 'tofu', 'broccoli', 'beef', 'ricecake', 'tripe', 'aorta', 'brain'];
+
 export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'pulls100', emoji: '🍢', reward: 30, check: (s) => s.lifetime.pulls >= 100 },
   { id: 'pulls1000', emoji: '🍱', reward: 100, check: (s) => s.lifetime.pulls >= 1000 },
@@ -91,7 +94,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'bowl50', emoji: '👑', reward: 500, check: (s) => s.stage >= 50 },
   { id: 'daily7', emoji: '🔥', reward: 150, check: (s) => s.daily.streak >= 7 || s.daily.bestStreak >= 7 },
   { id: 'rich', emoji: '🎋', reward: 88, check: (s) => s.coins >= 1000 },
-  { id: 'foodie', emoji: '📖', reward: 150, check: (s) => Object.keys(s.foodEaten).filter((k) => k !== 'golden').length >= 12 },
+  { id: 'foodie', emoji: '📖', reward: 150, check: (s) => FOODIE_IDS.every((k) => (s.foodEaten[k] ?? 0) > 0) },
   { id: 'special20', emoji: '✨', reward: 100, check: (s) => s.lifetime.specials >= 20 },
 ];
 

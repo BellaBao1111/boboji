@@ -6,6 +6,7 @@ import { TITLES, foodUnlockStage, stageLevel, titleFor } from './progression';
 import { FOOD_TYPES } from './foods';
 import { last7Days } from './daily';
 import { copyShareText, saveCardImage } from './share';
+import { foodThumb } from './thumbs';
 import { sfx } from './sfx';
 
 export interface UICallbacks {
@@ -659,16 +660,26 @@ export class UI {
       </div>
       <div class="ov-subtitle">${d.tabFoods}</div>
       <div class="food-grid">
-        ${FOOD_TYPES.map((f) => {
-          const n = save.foodEaten[f.id] ?? 0;
-          const unlockAt = foodUnlockStage(f.id);
-          const locked = n === 0 && unlockAt > Math.max(1, save.stage + 1);
-          return `<div class="food-cell ${n > 0 ? '' : 'dim'}">
-            <span class="fc-emoji">${locked ? '🔒' : FOOD_EMOJI[f.id] ?? '🍢'}</span>
-            <span class="fc-name">${locked ? d.lockedAchieve : d.foodNames[f.id] ?? f.name}</span>
-            <span class="fc-count">${n > 0 ? d.eatenTimes(n) : locked ? `${d.stageLabel(unlockAt)}` : d.notEaten}</span>
-          </div>`;
-        }).join('')}
+        ${[...FOOD_TYPES.map((f) => f.id), 'golden', 'chilifood']
+          .map((id) => {
+            const n = save.foodEaten[id] ?? 0;
+            const special = id === 'golden' || id === 'chilifood';
+            const unlockAt = special ? 1 : foodUnlockStage(id);
+            const locked = n === 0 && unlockAt > Math.max(1, save.stage + 1);
+            // 图鉴用游戏里真正的 3D 模型渲染缩略图；无 WebGL 时回退 emoji
+            const thumb = locked ? null : foodThumb(id);
+            const visual = locked
+              ? `<span class="fc-emoji">🔒</span>`
+              : thumb
+                ? `<img class="fc-img" src="${thumb}" alt=""/>`
+                : `<span class="fc-emoji">${FOOD_EMOJI[id] ?? '🍢'}</span>`;
+            return `<div class="food-cell ${n > 0 ? '' : 'dim'}">
+              ${visual}
+              <span class="fc-name">${locked ? d.lockedAchieve : d.foodNames[id] ?? id}</span>
+              <span class="fc-count">${n > 0 ? d.eatenTimes(n) : locked ? `${d.stageLabel(unlockAt)}` : d.notEaten}</span>
+            </div>`;
+          })
+          .join('')}
       </div>
       <div class="ov-subtitle">${d.tabAchieves}</div>
       <div class="ach-grid">
