@@ -18,20 +18,32 @@ A basin of scalding chili broth, dozens of bamboo skewers criss-crossed on top o
 - 🎯 **Hover (desktop) or press-and-hold (mobile)** — the targeted skewer gets a bright orange outline; release to pull
 - ⛔ Tapping a **pinned skewer** costs 2 seconds; the blockers flash red to show you why
 - ⚡ Quick **combos** earn bonus points and Sichuan-style praise ("Bashi!")
-- 🌟 **Golden egg skewers**: +8s and +300 points — grab them fast
-- 🥢 Stuck? **Call your friends**: a Chengdu friend eats the top 3 skewers for you, pinned or not (bowl number = number of helps; true gridlock earns a free one)
+- 🥢 Stuck? **Call your friends**: a Chengdu friend eats the top 3 skewers for you, pinned or not (true gridlock earns a free one)
+- 💪 **So close?** When you time out with just a few skewers left, the boss hands you 10 extra seconds — first one's on the house
 - 🌐 **Bilingual**: Chinese by default, one-tap English toggle on the title screen (remembered)
 
-### Menu
+### Endless bowl progression
 
-| Level | Skewers | Time | Notes |
-| --- | --- | --- | --- |
-| 🥣 Small Bowl | 16 | 90s | Just a warm-up |
-| 🍜 Medium Bowl | 26 | 110s | 1 golden skewer |
-| 🍲 Big Basin | 38 | 140s | 2 golden skewers |
-| ♾️ Endless Feast | ∞ | each pull buys time | "More skewers!" every 11 pulls — chase the high score |
+Bowls never run out: clear one and the next is served, procedurally generated with a sawtooth difficulty curve — every 5th bowl is a super-sized **Street Feast** 🎉, every 4th is an easy **On-the-House** 🎁 breather, deep bowls pile skewers into gnarlier tangles, and modifier bowls remix the rules (Misty Pot 🌫️, Midnight Diner 🕯️, Lazy Susan 🎡, Double Spice 🌶️, Big Eater 🐷). New foods (rice cake, tripe, aorta, brain flower…) and trick skewers unlock as you eat deeper. **How far can you eat?**
 
-Stars (★★★) are awarded by remaining time; progress is saved in localStorage.
+| Trick skewer | Rule |
+| --- | --- |
+| 🌟 Golden Egg | +8s, +300 pts |
+| 🧊 Ice Skewer | tap once to crack, again to pull |
+| 🧨 Firecracker | pull before the fuse burns: +5s; boom: −5s |
+| 🌶️ Devil Pepper | 5 seconds of double score |
+| 👻 Ghost Skewer | only pullable while visible |
+| 🧲 Magnet Skewer | slides out even when pinned |
+
+### Daily Bowl & more
+
+- 📅 **Daily Bowl**: the date seeds the layout — everyone on Earth eats the same bowl today. Clear it to keep your streak (7-day streak earns the Gilded Bowl 🏆)
+- ♾️ **Endless Feast**: each pull buys time, refills every 11 pulls — chase the high score
+- 🎋 **Bamboo coins** from pulls, clears and daily tasks buy **cosmetic skins** at the corner shop (clay pot, steel basin, tomato / green-pepper broth…) — looks only, never power
+- 📖 **Diner's Book**: food gallery, 14 achievements, and titles from *Skewer Apprentice* all the way to *BoBoJi Grandmaster*
+- 📤 **Share card**: one tap renders your result as a canvas-drawn card + emoji text to brag in the group chat
+
+Stars (★★★) are awarded by remaining time; everything is saved in localStorage.
 
 ## Tech Notes
 
@@ -88,20 +100,32 @@ Pushing to `main` auto-builds and deploys to GitHub Pages (see `.github/workflow
 - 🎯 **悬停（电脑）/ 按住（手机）**：瞄准的签会亮橙色描边，松手才拔
 - ⛔ 点到**被压住的签**：扣 2 秒，压住它的"元凶"会闪红光提示
 - ⚡ 手快**连击**有额外加分，连到位川妹儿开夸：巴适！安逸～雄起！
-- 🌟 **金签黄金卤蛋** +8 秒 +300 分，看到先抢
-- 🥢 卡住了喊**友友帮吃**：直接替你吃掉最上面 3 签（压住的也照吃）。第几碗就有几次，真死锁了免费送
+- 🥢 卡住了喊**友友帮吃**：直接替你吃掉最上面 3 签（压住的也照吃），真死锁了免费送
+- 💪 **就差一点？** 超时时只剩几签，老板会再送你 10 秒——第一次免费
 - 🌐 中英双语：默认中文，首页一键切换 English（选择会记住）
 
-### 菜单
+### 无限碗：一碗接一碗
 
-| 关卡 | 签数 | 时间 | 说明 |
-| --- | --- | --- | --- |
-| 🥣 小碗 | 16 串 | 90s | 先垫个肚子 |
-| 🍜 中碗 | 26 串 | 110s | 含 1 根金签 |
-| 🍲 大盆 | 38 串 | 140s | 含 2 根金签 |
-| ♾️ 流水席 | 无尽 | 拔一签回一口气 | 每 11 签"老板加签！"，冲最高分 |
+光盘就上下一碗，碗永远吃不完——程序化生成 + 锯齿难度：每 5 碗一场加量加时的**坝坝宴** 🎉，每 4 碗一份轻松的**老板送菜** 🎁，深碗把签堆得更深更纠缠，修饰词碗换着花样整活（雾锅 🌫️ / 深夜食堂 🕯️ / 转桌 🎡 / 麻辣双倍 🌶️ / 大胃王 🐷）。越吃越深还会解锁新食材（年糕、毛肚、黄喉、脑花……）和特殊签。**看你能吃到第几碗！**
 
-按剩余时间结星（★★★），成绩存在本地 localStorage。
+| 特殊签 | 规则 |
+| --- | --- |
+| 🌟 黄金卤蛋 | +8 秒 +300 分 |
+| 🧊 冰冻签 | 先敲一下碎冰，再拔 |
+| 🧨 炮仗签 | 引线烧完会炸：抢拔 +5s，炸了 −5s |
+| 🌶️ 魔鬼椒 | 拔掉后 5 秒全场双倍分 |
+| 👻 幽灵签 | 时隐时现，显形才拔得到 |
+| 🧲 磁签 | 压住也能直接吸出来 |
+
+### 每日一钵 & 更多
+
+- 📅 **每日一钵**：日期就是菜单，全世界今天吃的都是同一钵。光盘续上打卡，连吃 7 天送鎏金碗 🏆
+- ♾️ **流水席**：拔一签回一口气，每 11 签"老板加签！"，冲最高分
+- 🎋 **竹签币**：拔签、光盘、每日三件事都攒币，小卖部换**纯装饰皮肤**（老砂锅、不锈钢盆、番茄/青花椒锅底……）不卖数值
+- 📖 **食客手册**：食材图鉴、14 个成就、称号从"拔签学徒"一路吃到"钵钵鸡非遗传承人"
+- 📤 **晒战绩**：一键生成 Canvas 手绘分享卡 + emoji 战绩文案，发到群里攀比
+
+按剩余时间结星（★★★），全部进度存在本地 localStorage。
 
 ## 技术实现
 
