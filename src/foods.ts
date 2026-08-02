@@ -43,6 +43,19 @@ function oiled(hex: string, opt: { rough?: number; oil?: number; metal?: number;
 // 配色原则：浅色食材降低清漆反光（白上白晃眼），并混入更多彩色食材
 const MAT = {
   egg: oiled('#f5e8cf', { rough: 0.42, oil: 0.08, coat: 0.45 }),
+  ricecake: oiled('#f2ead6', { rough: 0.55, oil: 0.06, coat: 0.35 }),
+  tripe: oiled('#6b4a38', { rough: 0.6, oil: 0.2, flat: true }),
+  aorta: oiled('#f0d2a8', { rough: 0.4, oil: 0.12 }),
+  brain: oiled('#e8a7a0', { rough: 0.5, oil: 0.1, coat: 0.3 }),
+  chiliPepper: new THREE.MeshPhysicalMaterial({
+    color: '#d92b12',
+    roughness: 0.25,
+    clearcoat: 1,
+    clearcoatRoughness: 0.15,
+    emissive: '#4a0500',
+    emissiveIntensity: 0.35,
+  }),
+  chiliStem: oiled('#4f7a2e', { rough: 0.55, oil: 0 }),
   eggGold: new THREE.MeshPhysicalMaterial({
     color: '#f0b93c',
     roughness: 0.22,
@@ -189,6 +202,50 @@ const beefGeoms = [0, 1].map((i) => {
   return lumpy(g, 0.01, i * 17 + 9, 3);
 });
 
+// 年糕条（白糯圆角条）
+const ricecakeGeom = (() => {
+  const g = new RoundedBoxGeometry(0.26, 0.075, 0.13, 3, 0.03);
+  return lumpy(g, 0.004, 33, 2);
+})();
+
+// 毛肚（波浪薄片，flatShading 出毛边感）
+const tripeGeoms = [0, 1].map((seed) => {
+  const g = new THREE.BoxGeometry(0.32, 0.02, 0.24, 10, 1, 8);
+  const pos = g.attributes.position as THREE.BufferAttribute;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const wave = Math.sin(v.x * 26 + seed * 3) * 0.022 + Math.sin(v.z * 32 + seed * 7) * 0.014;
+    pos.setXYZ(i, v.x, v.y + wave, v.z);
+  }
+  g.computeVertexNormals();
+  return g;
+});
+
+// 黄喉（弯月厚片）
+const aortaGeom = new THREE.TorusGeometry(0.1, 0.04, 8, 16, Math.PI * 1.3);
+
+// 脑花（高频起皱的粉团，搞笑向）
+const brainGeoms = [0, 1].map((i) => lumpy(new THREE.SphereGeometry(0.155, 22, 18), 0.016, i * 11 + 5, 5));
+
+// 魔鬼椒（弯尖红椒 + 绿蒂）
+function makeChiliPepper(rnd: () => number): THREE.Group {
+  const grp = new THREE.Group();
+  const pts: THREE.Vector2[] = [];
+  for (let i = 0; i <= 10; i++) {
+    const k = i / 10;
+    pts.push(new THREE.Vector2(Math.sin(k * Math.PI) * 0.062 * (1 - k * 0.35) + 0.001, (k - 0.5) * 0.3));
+  }
+  const body = mesh(new THREE.LatheGeometry(pts, 14), MAT.chiliPepper);
+  body.rotation.z = 0.35 + rnd() * 0.25;
+  grp.add(body);
+  const stem = mesh(new THREE.ConeGeometry(0.03, 0.08, 8), MAT.chiliStem);
+  stem.position.set(-Math.sin(body.rotation.z) * 0.03, 0.17, 0);
+  stem.rotation.z = body.rotation.z;
+  grp.add(stem);
+  return grp;
+}
+
 export const FOOD_TYPES: FoodType[] = [
   {
     id: 'egg',
@@ -270,7 +327,59 @@ export const FOOD_TYPES: FoodType[] = [
       return { object: o, span: 0.18, colliders: [{ kind: 'cuboid', args: [0.168, 0.042, 0.128] }] };
     },
   },
+  {
+    id: 'ricecake',
+    name: '年糕',
+    count: [3, 3],
+    make(rnd) {
+      const o = mesh(ricecakeGeom, MAT.ricecake);
+      o.scale.setScalar(0.95 + rnd() * 0.12);
+      return { object: o, span: 0.16, colliders: [{ kind: 'cuboid', args: [0.135, 0.045, 0.075] }] };
+    },
+  },
+  {
+    id: 'tripe',
+    name: '毛肚',
+    count: [2, 3],
+    make(rnd) {
+      const o = mesh(tripeGeoms[(rnd() * tripeGeoms.length) | 0], MAT.tripe);
+      o.rotation.y = rnd() * 0.5;
+      return { object: o, span: 0.17, colliders: [{ kind: 'cuboid', args: [0.165, 0.035, 0.125] }] };
+    },
+  },
+  {
+    id: 'aorta',
+    name: '黄喉',
+    count: [2, 3],
+    make(rnd) {
+      const o = mesh(aortaGeom, MAT.aorta);
+      o.rotation.set(rnd() * 0.6 - 0.3, rnd() * Math.PI * 2, rnd() * 0.6 - 0.3);
+      return { object: o, span: 0.26, colliders: [{ kind: 'ball', args: [0.125] }] };
+    },
+  },
+  {
+    id: 'brain',
+    name: '脑花',
+    count: [2, 2],
+    make(rnd) {
+      const o = mesh(brainGeoms[(rnd() * brainGeoms.length) | 0], MAT.brain);
+      o.scale.set(1, 0.82, 1);
+      o.scale.multiplyScalar(0.95 + rnd() * 0.1);
+      return { object: o, span: 0.3, colliders: [{ kind: 'ball', args: [0.16] }] };
+    },
+  },
 ];
+
+/** 魔鬼椒签（chili 特殊签专用食材） */
+export const CHILI_FOOD: FoodType = {
+  id: 'chilifood',
+  name: '魔鬼椒',
+  count: [3, 3],
+  make(rnd) {
+    const o = makeChiliPepper(rnd);
+    return { object: o, span: 0.3, colliders: [{ kind: 'capsule', args: [0.1, 0.075] }] };
+  },
+};
 
 /** 金签卤蛋 */
 export const GOLDEN_FOOD: FoodType = {
@@ -284,6 +393,12 @@ export const GOLDEN_FOOD: FoodType = {
   },
 };
 
-export function randomFoodType(rnd: () => number): FoodType {
-  return FOOD_TYPES[(rnd() * FOOD_TYPES.length) | 0];
+/** 按食材池随机（内容滴灌：不同碗号解锁不同池子）；池为空/未知 id 时回退全量 */
+export function randomFoodType(rnd: () => number, pool?: string[]): FoodType {
+  let list = FOOD_TYPES;
+  if (pool && pool.length > 0) {
+    const filtered = FOOD_TYPES.filter((f) => pool.includes(f.id));
+    if (filtered.length > 0) list = filtered;
+  }
+  return list[(rnd() * list.length) | 0];
 }

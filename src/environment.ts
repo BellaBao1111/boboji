@@ -6,9 +6,12 @@ import {
   backgroundTexture,
   bambooTexture,
   chiliDipTexture,
+  clayTexture,
+  goldPorcelainTexture,
   matTexture,
   mulberry32,
   porcelainTexture,
+  potteryTexture,
   softCircleTexture,
   woodTexture,
 } from './textures';
@@ -36,6 +39,15 @@ export class Env {
   private steam: SteamPuff[] = [];
   private shakeMag = 0;
   private shakeOffset = new THREE.Vector3();
+
+  // 修饰词支持
+  private hemi!: THREE.HemisphereLight;
+  private key!: THREE.DirectionalLight;
+  private warm!: THREE.PointLight;
+  private torch: THREE.PointLight | null = null;
+  private fogLevel = 0; // 0~1，雾锅蒸汽浓度
+  private azimuthLimits: [number, number] = [-0.85, 0.85];
+  private outerBowlMat!: THREE.MeshPhysicalMaterial;
 
   constructor(container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -85,8 +97,8 @@ export class Env {
   }
 
   private addLights() {
-    const hemi = new THREE.HemisphereLight('#fff2e2', '#7a4326', 0.75);
-    this.scene.add(hemi);
+    this.hemi = new THREE.HemisphereLight('#fff2e2', '#7a4326', 0.75);
+    this.scene.add(this.hemi);
 
     const key = new THREE.DirectionalLight('#fff0d8', 2.4);
     key.position.set(3.6, 7.5, 2.8);
@@ -100,12 +112,90 @@ export class Env {
     key.shadow.camera.far = 16;
     key.shadow.bias = -0.0004;
     key.shadow.normalBias = 0.025;
+    this.key = key;
     this.scene.add(key);
 
     // 暖色补光（模拟灯笼氛围）
-    const warm = new THREE.PointLight('#ff9d4d', 26, 12, 2);
-    warm.position.set(-2.6, 3.4, -2.2);
-    this.scene.add(warm);
+    this.warm = new THREE.PointLight('#ff9d4d', 26, 12, 2);
+    this.warm.position.set(-2.6, 3.4, -2.2);
+    this.scene.add(this.warm);
+  }
+
+  // ---------- 修饰词：深夜食堂 / 雾锅 / 转桌 ----------
+  setNight(on: boolean) {
+    this.hemi.intensity = on ? 0.16 : 0.75;
+    this.key.intensity = on ? 0.5 : 2.4;
+    this.warm.intensity = on ? 10 : 26;
+    if (on && !this.torch) {
+      this.torch = new THREE.PointLight('#ffd9a0', 0, 5.5, 1.6);
+      this.torch.position.set(0, 2.6, 0);
+      this.scene.add(this.torch);
+    }
+    if (this.torch) this.torch.intensity = on ? 30 : 0;
+  }
+
+  /** 深夜食堂手电：照向指针所指的汤面位置 */
+  setTorchAt(x: number, z: number) {
+    if (!this.torch) return;
+    const r = Math.hypot(x, z);
+    const cap = BOWL.brothR + 0.6;
+    if (r > cap) {
+      x = (x / r) * cap;
+      z = (z / r) * cap;
+    }
+    this.torch.position.set(x, 2.4, z);
+  }
+
+  setFogLevel(k: number) {
+    this.fogLevel = Math.max(0, Math.min(1, k));
+  }
+
+  setSpin(on: boolean) {
+    this.controls.autoRotate = on;
+    this.controls.autoRotateSpeed = 1.15;
+    // 转桌需要全角度旋转，临时解锁方位角限制
+    this.controls.minAzimuthAngle = on ? -Infinity : this.azimuthLimits[0];
+    this.controls.maxAzimuthAngle = on ? Infinity : this.azimuthLimits[1];
+  }
+
+  /** 碗皮肤（小卖部） */
+  applyBowlSkin(id: string) {
+    const m = this.outerBowlMat;
+    if (!m) return;
+    m.map?.dispose();
+    m.map = null;
+    m.color.set('#ffffff');
+    m.metalness = 0;
+    m.roughness = 0.22;
+    m.clearcoat = 0.8;
+    m.clearcoatRoughness = 0.2;
+    switch (id) {
+      case 'clay':
+        m.map = clayTexture();
+        m.roughness = 0.85;
+        m.clearcoat = 0.05;
+        break;
+      case 'steel':
+        m.color.set('#c9ced4');
+        m.metalness = 0.92;
+        m.roughness = 0.3;
+        m.clearcoat = 0.4;
+        break;
+      case 'blackpottery':
+        m.map = potteryTexture();
+        m.roughness = 0.5;
+        m.clearcoat = 0.35;
+        break;
+      case 'gold':
+        m.map = goldPorcelainTexture();
+        m.metalness = 0.55;
+        m.roughness = 0.3;
+        m.clearcoat = 1;
+        break;
+      default:
+        m.map = porcelainTexture();
+    }
+    m.needsUpdate = true;
   }
 
   private addTable() {
@@ -143,15 +233,13 @@ export class Env {
       new THREE.Vector2(1.8, 0.985),
       new THREE.Vector2(1.72, 0.955),
     ];
-    const outer = new THREE.Mesh(
-      new THREE.LatheGeometry(outerPts, 56),
-      new THREE.MeshPhysicalMaterial({
-        map: porcelainTexture(),
-        roughness: 0.22,
-        clearcoat: 0.8,
-        clearcoatRoughness: 0.2,
-      }),
-    );
+    this.outerBowlMat = new THREE.MeshPhysicalMaterial({
+      map: porcelainTexture(),
+      roughness: 0.22,
+      clearcoat: 0.8,
+      clearcoatRoughness: 0.2,
+    });
+    const outer = new THREE.Mesh(new THREE.LatheGeometry(outerPts, 56), this.outerBowlMat);
     outer.castShadow = true;
     outer.receiveShadow = true;
     this.scene.add(outer);
@@ -349,16 +437,18 @@ export class Env {
 
   update(dt: number) {
     this.controls.update();
-    // 蒸汽
+    // 蒸汽（雾锅修饰词把它变成"看不清"的浓雾）
+    const fogOp = 0.16 + this.fogLevel * 0.5;
+    const fogScale = 1 + this.fogLevel * 1.1;
     for (const p of this.steam) {
       p.life += dt;
       if (p.life > p.maxLife) this.resetPuff(p);
       const k = p.life / p.maxLife;
-      const y = BOWL.brothY + 0.15 + k * 1.5;
+      const y = BOWL.brothY + 0.15 + k * (1.5 - this.fogLevel * 0.7);
       p.sprite.position.set(p.x + Math.sin(k * 5 + p.drift * 20) * 0.12 + p.drift * k * 2, y, p.z);
       const o = Math.sin(k * Math.PI);
-      (p.sprite.material as THREE.SpriteMaterial).opacity = o * 0.16;
-      const s = 0.5 + k * 1.1;
+      (p.sprite.material as THREE.SpriteMaterial).opacity = o * fogOp;
+      const s = (0.5 + k * 1.1) * fogScale;
       p.sprite.scale.set(s, s * 0.8, 1);
     }
     // 相机震动衰减

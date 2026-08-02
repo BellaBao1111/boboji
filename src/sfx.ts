@@ -194,6 +194,33 @@ export class Sfx {
     if (!this.ctx) return;
     this.osc('sine', 700, this.t, 0.06, 0.16, 500);
   }
+
+  /** 敲碎冰壳 */
+  crack() {
+    if (!this.ctx) return;
+    const t = this.t;
+    this.noise(t, 0.08, 0.35, 5200, 3, 'bandpass');
+    this.noise(t + 0.04, 0.12, 0.22, 3400, 2.4, 'bandpass');
+    this.osc('triangle', 2200, t, 0.06, 0.14, 1500);
+  }
+
+  /** 炮仗炸了 */
+  boom() {
+    if (!this.ctx) return;
+    const t = this.t;
+    this.noise(t, 0.32, 0.5, 900, 1, 'lowpass');
+    this.noise(t, 0.14, 0.3, 3200, 1.6, 'bandpass');
+    this.osc('sine', 120, t, 0.4, 0.5, 38);
+    this.osc('sawtooth', 220, t, 0.18, 0.2, 60);
+  }
+
+  /** 竹签币入账 */
+  coin() {
+    if (!this.ctx) return;
+    const t = this.t;
+    this.osc('square', 1567, t, 0.07, 0.12, 1567);
+    this.osc('square', 2093, t + 0.07, 0.16, 0.14, 2093);
+  }
 }
 
 export const sfx = new Sfx();

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type RAPIER from '@dimforge/rapier3d-compat';
-import { ColliderSpec, FoodType, GOLDEN_FOOD, randomFoodType } from './foods';
-import { SKEWER } from './config';
+import { CHILI_FOOD, ColliderSpec, FoodType, GOLDEN_FOOD, randomFoodType } from './foods';
+import { SKEWER, SkewerKind } from './config';
 
 let stickGeomCache: Map<number, THREE.BufferGeometry> = new Map();
 
@@ -46,6 +46,7 @@ interface MatRec {
   mat: THREE.MeshPhysicalMaterial | THREE.MeshStandardMaterial;
   e0: THREE.Color;
   i0: number;
+  o0: number;
 }
 
 export class Skewer {
@@ -53,7 +54,7 @@ export class Skewer {
   group = new THREE.Group();
   foodName: string;
   foodId: string;
-  golden: boolean;
+  kind: SkewerKind;
   len: number;
   colliderSpecs: ColliderSpec[] = [];
   foodMeshes: THREE.Object3D[] = [];
@@ -67,6 +68,14 @@ export class Skewer {
   hovered = false;
   stickColor: THREE.Color;
 
+  // 特殊签状态
+  iceCracked = false;
+  private iceShell: THREE.Mesh | null = null;
+  fuseT = -1; // 炮仗剩余引线秒数（game 驱动），<0 = 未点燃/非炮仗
+  exploded = false;
+  ghostVisible = true; // 幽灵签当前是否可拔
+  private ghostK = 1; // 当前不透明度系数
+
   private mats: MatRec[] = [];
   private outlineMat = OUTLINE_BASE.clone();
   private outlineMeshes: THREE.Mesh[] = [];
@@ -76,33 +85,48 @@ export class Skewer {
   private flashColor = new THREE.Color();
   hinted = false;
   private hintPhase = Math.random() * Math.PI * 2;
+  private pulsePhase = 0;
 
-  constructor(id: number, golden: boolean, rnd: () => number, forceType?: FoodType) {
+  get golden(): boolean {
+    return this.kind === 'golden';
+  }
+
+  constructor(id: number, kind: SkewerKind, rnd: () => number, foodPool?: string[], forceType?: FoodType) {
     this.id = id;
-    this.golden = golden;
-    const type = forceType ?? (golden ? GOLDEN_FOOD : randomFoodType(rnd));
+    this.kind = kind;
+    const type =
+      forceType ?? (kind === 'golden' ? GOLDEN_FOOD : kind === 'chili' ? CHILI_FOOD : randomFoodType(rnd, foodPool));
     this.foodName = type.name;
     this.foodId = type.id;
     this.len = SKEWER.minLen + rnd() * (SKEWER.maxLen - SKEWER.minLen);
 
-    // 竹签本体
-    this.stickColor = golden
-      ? new THREE.Color('#f7c649')
+    // 竹签本体（特殊签有专属签色，串串店"看签识菜"传统的延伸）
+    const kindStick = KIND_STICK[kind];
+    this.stickColor = kindStick
+      ? new THREE.Color(kindStick)
       : new THREE.Color(STICK_COLORS[type.id] ?? '#d8b06c').offsetHSL(0, 0, (rnd() - 0.5) * 0.05);
-    const stickMat = golden
-      ? new THREE.MeshPhysicalMaterial({
-          color: '#f7c649',
-          metalness: 0.9,
-          roughness: 0.24,
-          clearcoat: 1,
-          emissive: '#8a5200',
-          emissiveIntensity: 0.32,
-        })
-      : new THREE.MeshStandardMaterial({
-          color: this.stickColor,
-          roughness: 0.52,
-          metalness: 0,
-        });
+    const stickMat =
+      kind === 'golden'
+        ? new THREE.MeshPhysicalMaterial({
+            color: '#f7c649',
+            metalness: 0.9,
+            roughness: 0.24,
+            clearcoat: 1,
+            emissive: '#8a5200',
+            emissiveIntensity: 0.32,
+          })
+        : kind === 'magnet'
+          ? new THREE.MeshPhysicalMaterial({
+              color: '#aeb6bd',
+              metalness: 0.95,
+              roughness: 0.3,
+              clearcoat: 0.6,
+            })
+          : new THREE.MeshStandardMaterial({
+              color: this.stickColor,
+              roughness: 0.52,
+              metalness: 0,
+            });
     const stick = new THREE.Mesh(stickGeometry(this.len), stickMat);
     stick.castShadow = true;
     stick.receiveShadow = true;
@@ -120,6 +144,7 @@ export class Skewer {
     // 串食材：从签尖往下排
     const n = type.count[0] + Math.round(rnd() * (type.count[1] - type.count[0]));
     let y = this.len / 2 - 0.16;
+    let foodTopY = y;
     for (let i = 0; i < n; i++) {
       const piece = type.make(rnd);
       y -= piece.span / 2;
@@ -151,12 +176,70 @@ export class Skewer {
       }
       y -= piece.span / 2 + 0.024;
     }
+    const foodBotY = y + 0.024;
+
+    // ---- 特殊签专属装饰 ----
+    if (kind === 'ice') {
+      // 冰壳：罩住整段食材的半透明胶囊，敲一下才碎
+      const h = Math.max(0.3, foodTopY - foodBotY + 0.16);
+      const shellGeom = new THREE.CapsuleGeometry(0.27, h, 6, 14);
+      const shellMat = new THREE.MeshPhysicalMaterial({
+        color: '#cfeaff',
+        transparent: true,
+        opacity: 0.45,
+        roughness: 0.08,
+        metalness: 0,
+        clearcoat: 1,
+        clearcoatRoughness: 0.1,
+        depthWrite: false,
+      });
+      this.iceShell = new THREE.Mesh(shellGeom, shellMat);
+      this.iceShell.position.y = (foodTopY + foodBotY) / 2;
+      this.group.add(this.iceShell);
+      this.pickMeshes.push(this.iceShell);
+    } else if (kind === 'bomb') {
+      // 炮仗：签顶一个红金小炮仗
+      const cracker = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.055, 0.055, 0.2, 10),
+        new THREE.MeshPhysicalMaterial({ color: '#c1121f', roughness: 0.3, clearcoat: 0.8, emissive: '#3a0000', emissiveIntensity: 0.3 }),
+      );
+      cracker.position.y = this.len / 2 + 0.1;
+      cracker.castShadow = true;
+      this.group.add(cracker);
+      this.pickMeshes.push(cracker);
+      this.mats.push(rec(cracker.material as THREE.MeshPhysicalMaterial));
+      const band = new THREE.Mesh(
+        new THREE.TorusGeometry(0.057, 0.012, 6, 12),
+        new THREE.MeshStandardMaterial({ color: '#f5c451', metalness: 0.7, roughness: 0.3 }),
+      );
+      band.rotation.x = Math.PI / 2;
+      band.position.y = this.len / 2 + 0.1;
+      this.group.add(band);
+    } else if (kind === 'magnet') {
+      // 磁签：签顶红色磁环
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.06, 0.022, 8, 14),
+        new THREE.MeshPhysicalMaterial({ color: '#d92b12', metalness: 0.6, roughness: 0.25, clearcoat: 0.8 }),
+      );
+      ring.position.y = this.len / 2 + 0.06;
+      this.group.add(ring);
+      this.pickMeshes.push(ring);
+    }
+
+    if (kind === 'ghost') {
+      // 幽灵签：全部材质常备透明
+      for (const r of this.mats) {
+        r.mat.transparent = true;
+        r.mat.depthWrite = true;
+      }
+    }
 
     for (const m of this.pickMeshes) m.userData.skewerId = id;
     this.group.userData.skewerId = id;
 
-    // 描边壳（共享几何体，默认隐藏）
+    // 描边壳（共享几何体，默认隐藏；冰壳不描边）
     for (const m of this.pickMeshes) {
+      if (m === this.iceShell) continue;
       const o = new THREE.Mesh(m.geometry, this.outlineMat);
       o.position.copy(m.position);
       o.quaternion.copy(m.quaternion);
@@ -165,6 +248,18 @@ export class Skewer {
       m.parent!.add(o);
       this.outlineMeshes.push(o);
     }
+  }
+
+  /** 敲碎冰壳。返回冰壳世界坐标（撒碎冰粒子用） */
+  crackIce(): THREE.Vector3 | null {
+    if (!this.iceShell || this.iceCracked) return null;
+    this.iceCracked = true;
+    const p = new THREE.Vector3();
+    this.iceShell.getWorldPosition(p);
+    this.iceShell.visible = false;
+    const idx = this.pickMeshes.indexOf(this.iceShell);
+    if (idx >= 0) this.pickMeshes.splice(idx, 1);
+    return p;
   }
 
   /** 点击反馈闪烁 */
@@ -191,6 +286,12 @@ export class Skewer {
       this.hintPhase += dt * 5;
       e = (Math.sin(this.hintPhase) * 0.5 + 0.5) * 0.55;
       color = HINT_COLOR;
+    } else if (this.kind === 'bomb' && this.fuseT >= 0 && !this.exploded) {
+      // 炮仗：引线越短脉冲越急
+      const urgency = Math.max(0, Math.min(1, 1 - this.fuseT / 12));
+      this.pulsePhase += dt * (3.5 + urgency * 12);
+      e = 0.2 + (0.25 + 0.55 * urgency) * (Math.sin(this.pulsePhase) * 0.5 + 0.5);
+      color = BOMB_COLOR;
     }
     if (e > 0 && color) {
       for (const r of this.mats) {
@@ -198,7 +299,7 @@ export class Skewer {
         r.mat.emissiveIntensity = r.i0 + e;
       }
       (this.outlineMat.uniforms.uColor.value as THREE.Color).copy(color);
-      this.outlineMat.uniforms.uOpacity.value = 0.35 + 0.65 * Math.min(1, e);
+      this.outlineMat.uniforms.uOpacity.value = (0.35 + 0.65 * Math.min(1, e)) * (this.kind === 'ghost' ? this.ghostK : 1);
       if (!this.outlineOn) {
         for (const o of this.outlineMeshes) o.visible = true;
         this.outlineOn = true;
@@ -209,6 +310,16 @@ export class Skewer {
     }
   }
   private fxDirty = false;
+
+  /** 幽灵签显隐（game 按周期驱动）。k = 不透明度 0~1 */
+  setGhost(k: number) {
+    if (this.kind !== 'ghost') return;
+    this.ghostK = k;
+    this.ghostVisible = k > 0.42;
+    for (const r of this.mats) {
+      r.mat.opacity = r.o0 * (0.12 + 0.88 * k);
+    }
+  }
 
   /** 立即清掉所有高亮（拔签动画开始前调用，避免描边跟着飞） */
   clearFx() {
@@ -241,6 +352,17 @@ export class Skewer {
 
 const HINT_COLOR = new THREE.Color('#ffd23f');
 const HOVER_COLOR = new THREE.Color('#ff8c2e');
+const BOMB_COLOR = new THREE.Color('#ff3820');
+
+// 特殊签的专属签色（一眼认出）
+const KIND_STICK: Partial<Record<SkewerKind, string>> = {
+  golden: '#f7c649',
+  ice: '#bfe6ff',
+  bomb: '#8e1a0e',
+  chili: '#e03a1f',
+  ghost: '#cfd8e8',
+  magnet: '#aeb6bd',
+};
 
 // 签子按食材配色（串串店传统：不同颜色签子区分菜品），都选了在红汤/木桌上显眼的色
 const STICK_COLORS: Record<string, string> = {
@@ -252,6 +374,10 @@ const STICK_COLORS: Record<string, string> = {
   tofu: '#d4568a', // 玫红配金豆皮
   broccoli: '#ece0c4', // 米白配绿西兰花
   beef: '#e6c33c', // 亮黄配红牛肉
+  ricecake: '#e8734a', // 橘红配白年糕
+  tripe: '#f0e3b2', // 米黄配深毛肚
+  aorta: '#8a5fc0', // 深紫配浅黄喉
+  brain: '#88b8d8', // 雾蓝配粉脑花
 };
 
 // 描边高亮：沿法线膨胀的背面壳，任何底色的食材上都清晰可见（白色食材靠自发光看不出来）
@@ -281,5 +407,5 @@ const OUTLINE_BASE = new THREE.ShaderMaterial({
 });
 
 function rec(mat: THREE.MeshPhysicalMaterial | THREE.MeshStandardMaterial): MatRec {
-  return { mat, e0: mat.emissive.clone(), i0: mat.emissiveIntensity };
+  return { mat, e0: mat.emissive.clone(), i0: mat.emissiveIntensity, o0: mat.opacity };
 }

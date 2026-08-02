@@ -35,25 +35,28 @@ float fbm(vec2 p) {
   return v;
 }
 
+uniform vec3 uDeep;
+uniform vec3 uMid;
+uniform vec3 uSwirl;
+uniform vec3 uGlint;
+
 void main() {
   vec2 p = vPos.xy; // CircleGeometry 本地坐标在 xy 平面
   float r = length(p) / ${BOWL.brothR.toFixed(3)};
 
-  // 红汤底色
-  vec3 deep = vec3(0.40, 0.045, 0.028);
-  vec3 mid = vec3(0.60, 0.10, 0.040);
-  vec3 col = mix(mid, deep, smoothstep(0.1, 1.05, r));
+  // 汤底色（可换锅底皮肤）
+  vec3 col = mix(uMid, uDeep, smoothstep(0.1, 1.05, r));
 
   // 油花回旋
   float sw = fbm(p * 2.2 + vec2(uTime * 0.055, -uTime * 0.04));
   float sw2 = fbm(p * 3.9 - vec2(uTime * 0.028, uTime * 0.047) + sw * 1.7);
-  col = mix(col, vec3(0.75, 0.22, 0.055), smoothstep(0.52, 0.92, sw2) * 0.55);
+  col = mix(col, uSwirl, smoothstep(0.52, 0.92, sw2) * 0.55);
   // 大块暗涌
-  col = mix(col, deep * 0.8, smoothstep(0.6, 0.95, fbm(p * 1.2 - vec2(uTime * 0.02))) * 0.4);
+  col = mix(col, uDeep * 0.8, smoothstep(0.6, 0.95, fbm(p * 1.2 - vec2(uTime * 0.02))) * 0.4);
 
   // 油光点
   float g = pow(smoothstep(0.62, 1.0, noise(p * 9.0 + vec2(uTime * 0.22, -uTime * 0.13))), 3.0);
-  col += vec3(1.0, 0.5, 0.16) * g * 0.4;
+  col += uGlint * g * 0.4;
 
   // 涟漪
   for (int i = 0; i < ${MAX_RIPPLES}; i++) {
@@ -64,7 +67,7 @@ void main() {
     float rr = age * 1.75;
     float d = distance(p, rp.xy);
     float fade = (1.0 - age / 1.5) * rp.w;
-    col += vec3(1.0, 0.48, 0.2) * exp(-pow((d - rr) * 9.5, 2.0)) * fade * 0.6;
+    col += uGlint * exp(-pow((d - rr) * 9.5, 2.0)) * fade * 0.6;
     col -= vec3(0.3, 0.1, 0.03) * exp(-pow((d - rr + 0.1) * 11.0, 2.0)) * fade * 0.45;
   }
 
@@ -76,6 +79,14 @@ void main() {
   #include <colorspace_fragment>
 }
 `;
+
+/** 锅底皮肤配色（deep 深处 / mid 中间 / swirl 油花 / glint 油光） */
+const BROTH_THEMES: Record<string, { deep: number[]; mid: number[]; swirl: number[]; glint: number[] }> = {
+  redoil: { deep: [0.4, 0.045, 0.028], mid: [0.6, 0.1, 0.04], swirl: [0.75, 0.22, 0.055], glint: [1.0, 0.5, 0.16] },
+  clear: { deep: [0.42, 0.31, 0.16], mid: [0.62, 0.5, 0.28], swirl: [0.8, 0.68, 0.4], glint: [1.0, 0.92, 0.6] },
+  tomato: { deep: [0.5, 0.09, 0.03], mid: [0.78, 0.2, 0.07], swirl: [0.92, 0.35, 0.12], glint: [1.0, 0.6, 0.3] },
+  greenpepper: { deep: [0.14, 0.2, 0.06], mid: [0.3, 0.4, 0.12], swirl: [0.5, 0.6, 0.2], glint: [0.85, 1.0, 0.45] },
+};
 
 interface Bit {
   pos: THREE.Vector2;
@@ -102,12 +113,17 @@ export class Broth {
     this.ripples = new Float32Array(MAX_RIPPLES * 4);
     for (let i = 0; i < MAX_RIPPLES; i++) this.ripples[i * 4 + 2] = -1;
 
+    const th = BROTH_THEMES.redoil;
     this.mat = new THREE.ShaderMaterial({
       vertexShader: VERT,
       fragmentShader: FRAG,
       uniforms: {
         uTime: { value: 0 },
         uRipples: { value: this.ripples },
+        uDeep: { value: new THREE.Vector3(...th.deep) },
+        uMid: { value: new THREE.Vector3(...th.mid) },
+        uSwirl: { value: new THREE.Vector3(...th.swirl) },
+        uGlint: { value: new THREE.Vector3(...th.glint) },
       },
     });
     const surf = new THREE.Mesh(new THREE.CircleGeometry(BOWL.brothR + 0.06, 56), this.mat);
@@ -194,6 +210,15 @@ export class Broth {
       });
       im.instanceMatrix.needsUpdate = true;
     }
+  }
+
+  /** 换锅底（小卖部皮肤） */
+  setTheme(id: string) {
+    const th = BROTH_THEMES[id] ?? BROTH_THEMES.redoil;
+    (this.mat.uniforms.uDeep.value as THREE.Vector3).set(th.deep[0], th.deep[1], th.deep[2]);
+    (this.mat.uniforms.uMid.value as THREE.Vector3).set(th.mid[0], th.mid[1], th.mid[2]);
+    (this.mat.uniforms.uSwirl.value as THREE.Vector3).set(th.swirl[0], th.swirl[1], th.swirl[2]);
+    (this.mat.uniforms.uGlint.value as THREE.Vector3).set(th.glint[0], th.glint[1], th.glint[2]);
   }
 
   addRipple(x: number, z: number, strength = 1) {

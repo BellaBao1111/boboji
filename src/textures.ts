@@ -122,6 +122,100 @@ export function porcelainTexture(): THREE.CanvasTexture {
   return tex(c, 1);
 }
 
+/** 老砂锅外壁：粗陶棕 + 环纹 + 斑点 */
+export function clayTexture(): THREE.CanvasTexture {
+  const [c, g] = canvas(512, 256);
+  const rnd = mulberry32(43);
+  const grad = g.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, '#6b4a33');
+  grad.addColorStop(1, '#4a3122');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 512, 256);
+  // 拉坯环纹
+  for (let y = 8; y < 256; y += 10 + ((rnd() * 8) | 0)) {
+    g.strokeStyle = `rgba(30,18,10,${0.12 + rnd() * 0.18})`;
+    g.lineWidth = 1 + rnd() * 2;
+    g.beginPath();
+    g.moveTo(0, y);
+    g.lineTo(512, y + (rnd() - 0.5) * 3);
+    g.stroke();
+  }
+  // 烧制斑点
+  for (let i = 0; i < 260; i++) {
+    g.fillStyle = rnd() < 0.5 ? `rgba(28,16,8,${0.2 + rnd() * 0.3})` : `rgba(150,110,70,${0.1 + rnd() * 0.2})`;
+    g.beginPath();
+    g.arc(rnd() * 512, rnd() * 256, 0.6 + rnd() * 2.2, 0, 7);
+    g.fill();
+  }
+  // 上沿一圈深釉
+  g.fillStyle = 'rgba(24,12,6,0.75)';
+  g.fillRect(0, 0, 512, 18);
+  return tex(c, 1);
+}
+
+/** 黑陶碗外壁：炭黑 + 细密拉丝 + 若隐若现的哑光环 */
+export function potteryTexture(): THREE.CanvasTexture {
+  const [c, g] = canvas(512, 256);
+  const rnd = mulberry32(61);
+  g.fillStyle = '#211c18';
+  g.fillRect(0, 0, 512, 256);
+  for (let y = 0; y < 256; y += 2) {
+    g.fillStyle = `rgba(255,240,220,${0.015 + rnd() * 0.03})`;
+    g.fillRect(0, y, 512, 1);
+  }
+  for (const y of [40, 120, 200]) {
+    g.fillStyle = 'rgba(90,70,50,0.28)';
+    g.fillRect(0, y, 512, 6);
+  }
+  return tex(c, 1);
+}
+
+/** 鎏金碗：深红底 + 金色缠枝纹（连吃 7 天的排面） */
+export function goldPorcelainTexture(): THREE.CanvasTexture {
+  const [c, g] = canvas(1024, 256);
+  const rnd = mulberry32(88);
+  const grad = g.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, '#7a1408');
+  grad.addColorStop(1, '#5c0f06');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 1024, 256);
+  g.fillStyle = '#f0c050';
+  g.fillRect(0, 10, 1024, 7);
+  g.fillRect(0, 24, 1024, 3);
+  g.fillRect(0, 225, 1024, 4);
+  g.strokeStyle = '#f5c451';
+  g.lineWidth = 6;
+  g.beginPath();
+  for (let x = 0; x <= 1024; x += 8) {
+    const y = 120 + Math.sin((x / 1024) * Math.PI * 8) * 34;
+    x === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+  }
+  g.stroke();
+  for (let i = 0; i < 8; i++) {
+    const x = i * 128 + 64;
+    const y = 120 + Math.sin((x / 1024) * Math.PI * 8) * 34;
+    g.fillStyle = '#ffd970';
+    for (let p = 0; p < 6; p++) {
+      const a = (p / 6) * Math.PI * 2;
+      g.beginPath();
+      g.ellipse(x + Math.cos(a) * 13, y + Math.sin(a) * 13, 9, 5.5, a, 0, 7);
+      g.fill();
+    }
+    g.fillStyle = '#7a1408';
+    g.beginPath();
+    g.arc(x, y, 6, 0, 7);
+    g.fill();
+    g.fillStyle = '#e8b23c';
+    for (let p = 0; p < 3; p++) {
+      const a = rnd() * Math.PI * 2;
+      g.beginPath();
+      g.ellipse(x + Math.cos(a) * 30, y + Math.sin(a) * 24, 7, 3.5, a, 0, 7);
+      g.fill();
+    }
+  }
+  return tex(c, 1);
+}
+
 /** 竹签筒（竹编质感） */
 export function bambooTexture(): THREE.CanvasTexture {
   const [c, g] = canvas(256, 256);
