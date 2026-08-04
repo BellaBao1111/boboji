@@ -17,6 +17,9 @@
 | 出口合规 | `ITSAppUsesNonExemptEncryption=false` 已声明，每次提审少答一问 |
 | 隐私政策页 | https://bellabao1111.github.io/boboji/privacy.html （随 GitHub Pages 部署） |
 | 屏幕方向 | iPhone 竖屏+横屏、iPad 全方向（游戏自适应窗口尺寸） |
+| **Game Center** | 原生插件已就绪（`GameCenterPlugin.swift`，entitlement 已配）：自动登录、2 个排行榜上报、14 个成就同步、图鉴页内打开 GC 面板。App Store Connect 侧配置见下方专章 |
+| **好评弹窗** | `AppReviewPlugin.swift`：光盘拿三星的高光时刻请求评分；游戏侧节流（光盘≥3 碗、14 天一次、至多 3 次），系统再限流一层 |
+| **繁体中文** | 游戏内第三语言（简中 → 繁體 → English 循环切换，含全部文案/碗名/称号）；上架时可加 zh-Hant 商店元数据，冲港台新马编辑推荐 |
 
 ## 你需要亲自做的三件大事
 
@@ -198,6 +201,24 @@ Come on — pull those skewers!
 | 年龄分级 | 问卷全选"无" → 4+ |
 | 版权 | 2026 BellaBao |
 | 登录信息 | 无需登录，Sign-in required 不勾 |
+
+## 第 7.5 步：Game Center 配置（App Store Connect）
+
+App Store Connect → 你的 App → **服务 › Game Center**，创建以下 ID（代码里已写死，照抄即可）：
+
+**排行榜（经典排行榜，整数，越大越好）**
+
+| ID | 名称建议 | 说明 |
+|---|---|---|
+| `boboji.stage` | 吃到第几碗 | 无限进度最高碗号 |
+| `boboji.endless` | 流水席最高分 | 无尽模式单局分数 |
+
+**成就（全部一次性，100% 解锁）**——ID = `boboji.ach.` + 游戏内成就 id：
+
+`boboji.ach.pulls100`（百签斩）、`pulls1000`（千签宴）、`pulls5000`（五千签传说）、`combo15`（十五连神手）、`zeromiss`（零失误光盘）、`solo`（单挑一碗）、`golden50`（金蛋收藏家）、`bowl10`（十碗打卡）、`bowl25`（廿五碗常客）、`bowl50`（五十碗镇店）、`daily7`（连吃七天）、`rich`（千币富翁）、`foodie`（全食材图鉴）、`special20`（花活满级）
+
+> 每个成就需要一张 512×512 图标（可用食材缩略图风格让 Claude 生成）；成就分值总和 ≤1000，14 个成就建议每个 50~100 分。
+> 未登录 GC 的玩家一切照旧（上报静默跳过）；提审时记得在 App Store Connect 勾选该版本启用 Game Center。
 
 ## 第 8 步：Archive 上传
 

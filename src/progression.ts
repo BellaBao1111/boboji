@@ -62,6 +62,7 @@ const MOD_POOL: [ModId, number][] = [
 
 // ---------- 程序化碗名 ----------
 const STYLE_ZH = ['藤椒', '牛油', '骨汤', '冒椒', '青花椒', '糊辣', '酸汤', '麻酱', '蒜香', '火辣', '陈皮', '豆豉'];
+const STYLE_ZHT = ['藤椒', '牛油', '骨湯', '冒椒', '青花椒', '糊辣', '酸湯', '麻醬', '蒜香', '火辣', '陳皮', '豆豉'];
 const STYLE_EN = [
   'Green-Pepper',
   'Beef-Tallow',
@@ -79,6 +80,7 @@ const STYLE_EN = [
 
 type Shape = 'deep' | 'mid' | 'basin';
 const SHAPE_ZH: Record<Shape, string> = { deep: '深碗', mid: '中碗', basin: '大盆' };
+const SHAPE_ZHT: Record<Shape, string> = { deep: '深碗', mid: '中碗', basin: '大盆' };
 const SHAPE_EN: Record<Shape, string> = { deep: 'Deep Bowl', mid: 'Bowl', basin: 'Big Basin' };
 const SHAPE_EMOJI: Record<Shape, string> = { deep: '🍜', mid: '🥘', basin: '🍲' };
 
@@ -179,6 +181,11 @@ export function stageLevel(n: number): LevelDef {
     : reward
       ? `老板送菜·${STYLE_ZH[styleI]}`
       : `${STYLE_ZH[styleI]}${SHAPE_ZH[shape]}`;
+  const nameZht = feast
+    ? `壩壩宴·${STYLE_ZHT[styleI]}`
+    : reward
+      ? `老闆送菜·${STYLE_ZHT[styleI]}`
+      : `${STYLE_ZHT[styleI]}${SHAPE_ZHT[shape]}`;
   const nameEn = feast
     ? `Street Feast · ${STYLE_EN[styleI]}`
     : reward
@@ -200,6 +207,7 @@ export function stageLevel(n: number): LevelDef {
     specials,
     foodPool: foodPoolForStage(n),
     nameZh,
+    nameZht,
     nameEn,
   };
 }
@@ -212,19 +220,19 @@ export function mercyFor(failStreak: number): { timeMult: number; blockPenalty: 
   return { timeMult: 1, blockPenalty: 2, extraHelps: 0 };
 }
 
-/** 称号（按累计拔签数） */
-export const TITLES: [number, string, string][] = [
-  [0, '无名食客', 'Nameless Diner'],
-  [100, '拔签学徒', 'Skewer Apprentice'],
-  [500, '串场熟客', 'Regular Customer'],
-  [2000, '签王之王', 'King of Skewers'],
-  [5000, '巴适大师', 'Bashi Master'],
-  [10000, '钵钵鸡非遗传承人', 'BoBoJi Grandmaster'],
+/** 称号（按累计拔签数）：[阈值, 简中, 英文, 繁中] */
+export const TITLES: [number, string, string, string][] = [
+  [0, '无名食客', 'Nameless Diner', '無名食客'],
+  [100, '拔签学徒', 'Skewer Apprentice', '拔籤學徒'],
+  [500, '串场熟客', 'Regular Customer', '串場熟客'],
+  [2000, '签王之王', 'King of Skewers', '籤王之王'],
+  [5000, '巴适大师', 'Bashi Master', '巴適大師'],
+  [10000, '钵钵鸡非遗传承人', 'BoBoJi Grandmaster', '缽缽雞非遺傳承人'],
 ];
 
-export function titleFor(lifetimePulls: number): { idx: number; zh: string; en: string; next: number | null } {
+export function titleFor(lifetimePulls: number): { idx: number; zh: string; en: string; zht: string; next: number | null } {
   let idx = 0;
   for (let i = 0; i < TITLES.length; i++) if (lifetimePulls >= TITLES[i][0]) idx = i;
   const next = idx + 1 < TITLES.length ? TITLES[idx + 1][0] : null;
-  return { idx, zh: TITLES[idx][1], en: TITLES[idx][2], next };
+  return { idx, zh: TITLES[idx][1], en: TITLES[idx][2], zht: TITLES[idx][3], next };
 }

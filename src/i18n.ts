@@ -1,7 +1,7 @@
 import type { ModId, SkewerKind } from './config';
 import type { LevelDef } from './config';
 
-export type Lang = 'zh' | 'en';
+export type Lang = 'zh' | 'zht' | 'en';
 
 interface LevelText {
   name: string;
@@ -164,7 +164,7 @@ const ZH: Dict = {
   sub: '红油签签 · 压住的莫拔 · 一碗接一碗根本停不下来',
   start: '开 吃 ！',
   howTo: '怎么玩',
-  langBtn: 'English',
+  langBtn: '繁體中文',
   footer: '作者：圣何塞椰子鸡 · 致敬我最好的成都友友们',
   btnDaily: '📅 每日一钵',
   btnCollection: '📖 图鉴',
@@ -413,7 +413,7 @@ const EN: Dict = {
   sub: 'Chili-oil skewers · Never pull a pinned one · One bowl leads to another',
   start: 'DIG IN!',
   howTo: 'How to Play',
-  langBtn: '中文',
+  langBtn: '简体中文',
   footer: 'By San Jose Coconut Chicken · A tribute to my best Chengdu friends',
   btnDaily: '📅 Daily Bowl',
   btnCollection: '📖 Collection',
@@ -656,10 +656,259 @@ const EN: Dict = {
   ],
 };
 
+const ZHT: Dict = {
+  pageTitle: '缽缽雞 · 籤籤拔起來',
+  badge: '矽谷冷串串 · 巴適得板',
+  sub: '紅油籤籤 · 壓住的莫拔 · 一碗接一碗根本停不下來',
+  start: '開 吃 ！',
+  howTo: '怎麼玩',
+  langBtn: 'English',
+  footer: '作者：聖荷西椰子雞 · 致敬我最好的成都友友們',
+  btnDaily: '📅 每日一缽',
+  btnCollection: '📖 圖鑑',
+  menuTitle: '點 單',
+  back: '返回',
+  notTried: '還沒吃過',
+  lockedHint: '先吃上一碗',
+  bestPrefix: (s) => `最高 ${s} 分`,
+  levels: {
+    l1: { name: '小碗', desc: '先墊個肚子' },
+    l2: { name: '中碗', desc: '吃出節奏了' },
+    l3: { name: '大盆', desc: '老闆多舀點湯' },
+    endless: { name: '流水席', desc: '吃不完根本吃不完\n拔一籤回一口氣' },
+  },
+  stageLabel: (n) => `第 ${n} 碗`,
+  stageDesc: (c, t) => `${c} 串 · ${t} 秒`,
+  heroEat: '開吃這碗！',
+  heroCleared: '已光盤',
+  feastTag: '壩壩宴 · 加量加時',
+  rewardTag: '老闆送的 · 輕鬆一碗',
+  newBowlTag: '新碗',
+  modNames: {
+    fog: '霧鍋',
+    night: '深夜食堂',
+    spin: '轉桌',
+    double: '麻辣雙倍',
+    eater: '大胃王',
+  },
+  modDescs: {
+    fog: '蒸氣瀰漫，看不清下層',
+    night: '燈光昏暗，指哪亮哪',
+    spin: '桌子在轉，瞄準要跟上',
+    double: '得分×2，時間收緊',
+    eater: '吃得飛快，純爽',
+  },
+  specialNames: {
+    golden: '黃金滷蛋',
+    bomb: '炮仗籤',
+    chili: '魔鬼椒',
+    ghost: '幽靈籤',
+    magnet: '磁籤',
+  },
+  specialTips: {
+    bomb: '🧨 炮仗籤：引線燒完會炸，搶先拔掉 +5s！',
+    chili: '🌶️ 魔鬼椒：拔掉後 5 秒全場雙倍分！',
+    ghost: '👻 幽靈籤：時隱時現，顯形才拔得到！',
+    magnet: '🧲 磁籤：壓住也能直接吸出來！',
+  },
+  foodNames: {
+    egg: '鵪鶉蛋',
+    lotus: '藕片',
+    kelp: '海帶結',
+    gizzard: '郡肝',
+    carrot: '胡蘿蔔',
+    tofu: '豆皮捲',
+    broccoli: '西蘭花',
+    beef: '牛肉',
+    golden: '黃金滷蛋',
+    ricecake: '年糕',
+    tripe: '毛肚',
+    aorta: '黃喉',
+    brain: '腦花',
+    chilifood: '魔鬼椒',
+  },
+  shopTitle: '小賣部',
+  collectionTitle: '食客手冊',
+  missionsTitle: '每日三件事',
+  coinName: '竹籤幣',
+  statLeft: '剩餘籤',
+  statScore: '得分',
+  helpEat: '幫吃',
+  goalTip: '點沒被壓住的籤 · 拖動空白處轉視角',
+  comboPrefix: '連擊 ×',
+  frenzyTag: '雙倍分！',
+  serve: (name) => `${name}上桌！`,
+  digIn: '開吃！',
+  refill: '老闆加籤！',
+  helperShout: '友友幫吃！',
+  winShout: '光盤咯！',
+  loseShout: '時間到咯～',
+  fullShout: '吃飽了！',
+  reviveShout: '再戰！',
+  blocked: ['壓住了！', '上頭有籤！', '先拿上面的！', '莫急莫急！'],
+  golden: (sec) => `黃金滷蛋 +${sec}s`,
+  deadlockGift: '籤籤卡死了，友友來幫吃一口！',
+  praises: [
+    [3, '巴適！'],
+    [5, '安逸～'],
+    [8, '雄起！'],
+    [12, '不擺了！'],
+    [16, '神仙手速！'],
+    [20, '籤神下凡！'],
+    [26, '開掛了嗦！'],
+  ],
+  bombDefused: (sec) => `拆彈成功 +${sec}s`,
+  bombBoom: (sec) => `炸了！-${sec}s`,
+  chiliOn: '上頭了！雙倍分 ×5s',
+  magnetPull: '吸出來了！',
+  pauseTitle: '歇口氣',
+  pauseSub: '湯還熱著，籤籤不等人～',
+  resume: '繼續吃',
+  restart: '重新上桌',
+  changeBowl: '換個碗',
+  reviveTitle: '就差一點！',
+  reviveSub: (n) => `只剩 ${n} 籤了，放棄可惜了嘛`,
+  reviveFree: '老闆加送 10 秒',
+  revivePaid: (c) => `${c} 🎋 續 10 秒`,
+  reviveGiveUp: '認輸',
+  winTitle: '光盤咯！',
+  loseTitle: '時間到咯～',
+  fullTitle: '吃飽了！',
+  winSub: (name, total) => `「${name}」一共 ${total} 籤，全部安排！`,
+  loseSub: (remaining) => `還剩 ${remaining} 籤沒拔完，再來一盤嘛`,
+  nearMiss: (remaining) => `就差 ${remaining} 籤！老闆都替你著急`,
+  fullSub: (picked) => `流水席上一共拔了 <b>${picked}</b> 籤`,
+  rowPick: '拔籤',
+  rowTime: '用時',
+  rowCombo: '最高連擊',
+  rowBill: '結帳',
+  pickVal: (n) => `${n} 籤`,
+  billVal: (n) => `${n * 2} 元`,
+  scoreLabel: '總分',
+  newRecord: ' · 🎉 新紀錄！',
+  nextBowl: '下一碗',
+  oneMore: '再來一份',
+  oneMoreBowl: '再來一碗！',
+  retryBowl: '再拼一次！',
+  shareBtn: '曬戰績',
+  nextBowlTeaser: (name) => `下一碗 · ${name}`,
+  teaserFood: (name) => `解鎖新食材「${name}」`,
+  teaserSpecial: (name) => `解鎖「${name}」`,
+  coinsEarned: (n) => `+${n} 🎋`,
+  missionNames: {
+    pull50: '拔籤 50 根',
+    pull120: '拔籤 120 根',
+    combo8: '達成一次 8 連擊',
+    combo12: '達成一次 12 連擊',
+    golden3: '吃 3 根金籤',
+    clear2: '光盤 2 次',
+    nohelp: '不用幫吃光盤一次',
+    fastwin: '剩 30% 時間光盤一次',
+    special5: '拔 5 根特殊籤',
+    endless30: '流水席單局拔 30 籤',
+  },
+  missionDone: (name, coins) => `任務完成「${name}」 +${coins} 🎋`,
+  achieveNames: {
+    pulls100: '百籤斬',
+    pulls1000: '千籤宴',
+    pulls5000: '五千籤傳說',
+    combo15: '十五連神手',
+    zeromiss: '零失誤光盤',
+    solo: '單挑一碗',
+    golden50: '金蛋收藏家',
+    bowl10: '十碗打卡',
+    bowl25: '廿五碗常客',
+    bowl50: '五十碗鎮店',
+    daily7: '連吃七天',
+    rich: '千幣富翁',
+    foodie: '全食材圖鑑',
+    special20: '花活滿級',
+  },
+  achieveDone: (name, coins) => `成就解鎖「${name}」 +${coins} 🎋`,
+  titleUp: (title) => `稱號晉升「${title}」！`,
+  titleLabel: '當前稱號',
+  nextTitleIn: (n) => `再拔 ${n} 籤晉升`,
+  tabFoods: '食材圖鑑',
+  tabAchieves: '成就',
+  statPulls: '累計拔籤',
+  statGolden: '金籤',
+  statBowls: '光盤次數',
+  statBestCombo: '最高連擊',
+  statSpecials: '特殊籤',
+  statStage: '吃到第幾碗',
+  eatenTimes: (n) => `吃過 ${n} 串`,
+  notEaten: '還沒吃過',
+  lockedAchieve: '？？？',
+  slotBowl: '碗',
+  slotBroth: '鍋底',
+  skinNames: {
+    porcelain: '青花瓷碗',
+    clay: '老砂鍋',
+    steel: '不鏽鋼盆',
+    blackpottery: '黑陶碗',
+    gold: '鎏金碗',
+    redoil: '紅油鍋底',
+    clear: '清湯鍋底',
+    tomato: '番茄鍋底',
+    greenpepper: '青花椒鍋底',
+  },
+  buy: '買',
+  equip: '穿上',
+  equipped: '用著呢',
+  notEnough: '竹籤幣不夠，再吃兩碗嘛',
+  streakGift: (n) => `連吃 ${n} 天贈品`,
+  dailyTitle: '每日一缽',
+  dailySub: '全球同一缽 · 一天一次',
+  dailyStart: '今日開缽！',
+  dailyRetry: '再試一次（成績已記）',
+  dailyDoneTag: '今日已光盤 ✓',
+  dailyTodayDone: '今天吃過了，明天再來！',
+  dailyStreak: (n) => `🔥 連吃 ${n} 天`,
+  dailyRules: '日期就是菜單，全世界今天吃的都是同一缽。光盤續上打卡，連著吃有贈品！',
+  dailyCalTitle: '最近七天',
+  shareSave: '儲存圖片',
+  shareCopy: '複製戰績文案',
+  shareCopied: '已複製！發到群裡去',
+  shareClose: '關閉',
+  shareCardTitle: '缽缽雞 · 籤籤拔起來',
+  shareDaily: '每日一缽',
+  shareStageLine: (n, name) => `第 ${n} 碗「${name}」`,
+  shareInvite: '你能吃到第幾碗？',
+  helpTitle: '怎麼吃缽缽雞',
+  gotIt: '曉得了',
+  helpRows: [
+    {
+      ico: '🍢',
+      title: '只能拔沒被壓住的籤',
+      body: '籤籤在紅湯裡層層疊疊，上面壓著別根籤就拔不動，還要扣 2 秒！被壓的籤會閃紅光提示。',
+    },
+    {
+      ico: '🍲',
+      title: '一碗接一碗，越吃越大',
+      body: '光盤就上下一碗，碗越來越大、花樣越來越多：壩壩宴、深碗、特殊籤……看你能吃到第幾碗！',
+    },
+    {
+      ico: '⏱️',
+      title: '手快有加分',
+      body: '連擊有額外加分，連到位川妹兒直接開誇。金籤滷蛋 +8 秒，看到先搶！差一點點時老闆還會送你續命。',
+    },
+    {
+      ico: '🥢',
+      title: '卡住了喊友友幫吃',
+      body: '成都友友出手，直接替你吃掉最上面 3 籤——壓住的也照吃！真出現籤籤互相壓死的死鎖，友友會自動幫吃一根解開。',
+    },
+    {
+      ico: '🎋',
+      title: '竹籤幣換皮膚',
+      body: '拔籤、光盤、每日任務都攢竹籤幣，去小賣部換砂鍋、番茄鍋底……全是裝飾，不賣數值。',
+    },
+  ],
+};
+
 let current: Lang = 'zh';
 
 export function initLang(saved: string | undefined) {
-  current = saved === 'en' ? 'en' : 'zh';
+  current = saved === 'en' ? 'en' : saved === 'zht' ? 'zht' : 'zh';
 }
 
 export function getLang(): Lang {
@@ -670,13 +919,25 @@ export function setLang(l: Lang) {
   current = l;
 }
 
+/** 语言循环：简中 → 繁中 → English → 简中 */
+export function nextLang(): Lang {
+  return current === 'zh' ? 'zht' : current === 'zht' ? 'en' : 'zh';
+}
+
+/** 按当前语言三选一 */
+export function pickLang<T>(zh: T, en: T, zht: T): T {
+  return current === 'en' ? en : current === 'zht' ? zht : zh;
+}
+
 export function t(): Dict {
-  return current === 'en' ? EN : ZH;
+  return current === 'en' ? EN : current === 'zht' ? ZHT : ZH;
 }
 
 /** 关卡显示名：经典碗走词典，无限碗用生成名 */
 export function levelName(def: LevelDef): string {
   const d = t();
   if (d.levels[def.id]) return d.levels[def.id].name;
-  return current === 'en' ? (def.nameEn ?? def.id) : (def.nameZh ?? def.id);
+  if (current === 'en') return def.nameEn ?? def.id;
+  if (current === 'zht') return def.nameZht ?? def.nameZh ?? def.id;
+  return def.nameZh ?? def.id;
 }

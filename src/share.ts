@@ -1,4 +1,4 @@
-import { getLang, t } from './i18n';
+import { getLang, pickLang, t } from './i18n';
 
 export interface ShareInfo {
   daily: boolean;
@@ -122,7 +122,7 @@ export function drawShareCard(info: ShareInfo): HTMLCanvasElement {
   g.textAlign = 'center';
   g.fillStyle = '#fff3e0';
   g.font = `64px ${FONT_TITLE}`;
-  g.fillText(getLang() === 'zh' ? '钵 钵 鸡' : 'BoBoJi', W / 2, 108);
+  g.fillText(pickLang('钵 钵 鸡', 'BoBoJi', '缽 缽 雞'), W / 2, 108);
   g.font = `17px ${FONT}`;
   g.fillStyle = 'rgba(255,233,199,0.75)';
   g.fillText(d.badge, W / 2, 140);
@@ -183,7 +183,9 @@ export function drawShareCard(info: ShareInfo): HTMLCanvasElement {
   g.font = `20px ${FONT}`;
   g.fillStyle = '#f5c451';
   const titleLine =
-    getLang() === 'zh' ? `「${info.title}」 · 已吃到第 ${Math.max(info.maxStage, info.stage ?? 0)} 碗` : `"${info.title}" · Bowl ${Math.max(info.maxStage, info.stage ?? 0)} reached`;
+    getLang() !== 'en'
+      ? `「${info.title}」 · 已吃到第 ${Math.max(info.maxStage, info.stage ?? 0)} 碗`
+      : `"${info.title}" · Bowl ${Math.max(info.maxStage, info.stage ?? 0)} reached`;
   g.fillText(titleLine, W / 2, 738);
 
   // 邀战 + 链接
@@ -200,21 +202,26 @@ export function drawShareCard(info: ShareInfo): HTMLCanvasElement {
 /** emoji 战绩文案（复制进群） */
 export function buildShareText(info: ShareInfo): string {
   const d = t();
-  const zh = getLang() === 'zh';
+  const zh = getLang() !== 'en';
   const skewerBar = (() => {
     const n = 10;
     const k = info.total > 0 ? Math.round((info.picked / info.total) * n) : n;
     return '🍢'.repeat(Math.max(0, Math.min(n, k))) + '⬜'.repeat(Math.max(0, n - k));
   })();
+  const gameName = pickLang('钵钵鸡', 'BoBoJi', '缽缽雞');
   const lines: string[] = [];
-  lines.push(zh ? `🍢 钵钵鸡 · ${info.daily ? '每日一钵 ' : ''}${info.dateStr}` : `🍢 BoBoJi · ${info.daily ? 'Daily Bowl ' : ''}${info.dateStr}`);
+  lines.push(zh ? `🍢 ${gameName} · ${info.daily ? `${d.shareDaily} ` : ''}${info.dateStr}` : `🍢 BoBoJi · ${info.daily ? 'Daily Bowl ' : ''}${info.dateStr}`);
   if (!info.daily) lines.push(d.shareStageLine(info.stage ?? 1, info.bowlName));
-  lines.push(`${skewerBar} ${info.picked}/${info.total}${info.win ? (zh ? ' 光盘!' : ' CLEAR!') : ''}`);
+  lines.push(`${skewerBar} ${info.picked}/${info.total}${info.win ? pickLang(' 光盘!', ' CLEAR!', ' 光盤!') : ''}`);
   const bits: string[] = [`🏆 ${info.score}`, `🔥×${info.bestCombo}`];
   if (info.stars > 0) bits.push('★'.repeat(info.stars));
-  if (info.streak > 1) bits.push(zh ? `连吃${info.streak}天` : `${info.streak}-day streak`);
+  if (info.streak > 1) bits.push(pickLang(`连吃${info.streak}天`, `${info.streak}-day streak`, `連吃${info.streak}天`));
   lines.push(bits.join(' · '));
-  lines.push(zh ? `我已吃到第 ${Math.max(info.maxStage, info.stage ?? 0)} 碗，${d.shareInvite}` : `Bowl ${Math.max(info.maxStage, info.stage ?? 0)} reached. ${d.shareInvite}`);
+  lines.push(
+    zh
+      ? `${pickLang('我已吃到第', '', '我已吃到第')} ${Math.max(info.maxStage, info.stage ?? 0)} 碗，${d.shareInvite}`
+      : `Bowl ${Math.max(info.maxStage, info.stage ?? 0)} reached. ${d.shareInvite}`,
+  );
   lines.push(`👉 https://${URL_TXT}`);
   return lines.join('\n');
 }

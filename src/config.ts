@@ -81,6 +81,7 @@ export interface LevelDef {
   seed?: number; // 指定倒签序列种子（每日一钵全球同题）
   foodPool?: string[]; // 本碗可出现的食材（内容滴灌）
   nameZh?: string; // 生成碗名（stage ≥ 4）；经典碗走 i18n.levels
+  nameZht?: string;
   nameEn?: string;
 }
 

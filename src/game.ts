@@ -8,12 +8,13 @@ import { Skewer } from './skewer';
 import { sfx } from './sfx';
 import { loadSave, persist, todayStr } from './store';
 import { BOWL, ENDLESS, LEVELS, LevelDef, RULES, SkewerKind } from './config';
-import { getLang, initLang, setLang, t, levelName } from './i18n';
+import { getLang, initLang, nextLang, pickLang, setLang, t, levelName } from './i18n';
 import { mulberry32 } from './textures';
 import { foodUnlockedAt, mercyFor, specialUnlockedAt, specialsUnlockedBy, stageLevel, titleFor } from './progression';
 import { SKINS, bumpMission, buySkin, checkAchievements, missionDef, ownsSkin, rollMissions } from './meta';
 import { dailyLevel, recordDaily, refreshStreak } from './daily';
 import { ShareInfo, buildShareText, drawShareCard } from './share';
+import { gcAuthenticate, gcSubmitEndless, gcSubmitStage, gcUnlockAchievement, isNative, requestAppReview } from './native';
 
 type State = 'home' | 'levels' | 'intro' | 'play' | 'pause' | 'revive' | 'result';
 
@@ -216,7 +217,7 @@ export class Game {
         onToggleLang: () => {
           sfx.unlock();
           sfx.click();
-          const next = getLang() === 'zh' ? 'en' : 'zh';
+          const next = nextLang(); // 简中 → 繁中 → English 循环
           setLang(next);
           this.save.lang = next;
           persist(this.save);
@@ -232,6 +233,7 @@ export class Game {
     this.bindPointer();
     this.applySkins();
     this.ui.show('home');
+    gcAuthenticate(); // iOS：登录 Game Center（网页版 no-op）
 
     if (new URLSearchParams(location.search).has('debug')) this.installDebug();
   }
@@ -449,7 +451,7 @@ export class Game {
     if (isSpecial) this.save.lifetime.specials++;
     const titleAfter = titleFor(this.save.lifetime.pulls);
     if (titleAfter.idx !== titleBefore) {
-      this.ui.toast(t().titleUp(getLang() === 'zh' ? titleAfter.zh : titleAfter.en));
+      this.ui.toast(t().titleUp(pickLang(titleAfter.zh, titleAfter.en, titleAfter.zht)));
       sfx.praise();
     }
     this.mission('pull50');
@@ -896,11 +898,17 @@ export class Game {
       dailyStreak: this.save.daily.streak,
     });
     fresh.forEach((a, i) => {
+      gcUnlockAchievement(a.id); // 同步到 Game Center（网页版 no-op）
       window.setTimeout(() => {
         this.ui.toast(`${a.emoji} ${t().achieveDone(t().achieveNames[a.id] ?? a.id, a.reward)}`);
         sfx.coin();
-      }, 1400 + i * 1300);
+      }, 2600 + i * 1300);
     });
+    // Game Center 排行榜上报
+    if (win && this.level.stage) gcSubmitStage(this.save.stage);
+    if (this.level.endless) gcSubmitEndless(this.score);
+    // 好评弹窗：只在"光盘拿三星"的高光时刻请求（iOS 限流每年 3 次,自己再节流一层）
+    if (win && stars === 3 && !this.level.daily) this.maybeRequestReview();
     persist(this.save);
 
     // ---- 分享卡数据 ----
@@ -917,7 +925,7 @@ export class Game {
       bestCombo: this.bestCombo,
       stars,
       streak: this.save.daily.streak,
-      title: getLang() === 'zh' ? title.zh : title.en,
+      title: pickLang(title.zh, title.en, title.zht),
       maxStage: this.save.stage,
     };
 
@@ -977,6 +985,22 @@ export class Game {
     if (!this.lastShare) return;
     sfx.click();
     this.ui.showShare(drawShareCard(this.lastShare), buildShareText(this.lastShare));
+  }
+
+  /** 好评弹窗节流：至少光盘 3 碗、每 14 天最多一次、累计最多 3 次 */
+  private maybeRequestReview() {
+    if (!isNative()) return;
+    const r = this.save.review;
+    if (r.asked >= 3 || this.save.lifetime.bowls < 3) return;
+    const today = todayStr();
+    if (r.last) {
+      const days = (new Date(today).getTime() - new Date(r.last).getTime()) / 86400000;
+      if (days < 14) return;
+    }
+    r.asked++;
+    r.last = today;
+    // 等结算面板亮相、玩家还沉浸在三星喜悦里时再弹
+    window.setTimeout(() => requestAppReview(), 2000);
   }
 
   // ---------- 帮吃：友友出手，直接吃掉最上面 3 签（压住的也照吃） ----------

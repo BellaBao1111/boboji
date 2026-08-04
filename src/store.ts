@@ -43,6 +43,8 @@ export interface SaveData {
   };
   /** 连败计数（放水用），按关卡 id */
   failStreak: Record<string, number>;
+  /** 好评弹窗节流（iOS）：问过几次、上次日期 */
+  review: { asked: number; last: string };
 }
 
 function defaults(): SaveData {
@@ -60,6 +62,7 @@ function defaults(): SaveData {
     daily: { streak: 0, bestStreak: 0, lastWinDate: '', history: {} },
     missions: { date: '', ids: [], progress: [], done: [] },
     failStreak: {},
+    review: { asked: 0, last: '' },
   };
 }
 
@@ -83,6 +86,7 @@ export function loadSave(): SaveData {
         daily: { ...base.daily, ...(d.daily ?? {}), history: d.daily?.history ?? {} },
         missions: { ...base.missions, ...(d.missions ?? {}) },
         failStreak: d.failStreak ?? {},
+        review: { ...base.review, ...(d.review ?? {}) },
       };
       // 老档迁移：以前只有 l1~l3 星星，推导无限进度
       if (typeof d.stage !== 'number') {

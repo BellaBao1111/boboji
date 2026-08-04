@@ -1,5 +1,5 @@
 import { LEVELS, ModId } from './config';
-import { getLang, levelName, t } from './i18n';
+import { levelName, pickLang, t } from './i18n';
 import type { SaveData } from './store';
 import { ACHIEVEMENTS, MISSION_POOL, SKINS, ownsSkin } from './meta';
 import { TITLES, foodUnlockStage, stageLevel, titleFor } from './progression';
@@ -7,6 +7,7 @@ import { FOOD_TYPES } from './foods';
 import { last7Days } from './daily';
 import { copyShareText, saveCardImage } from './share';
 import { foodThumb } from './thumbs';
+import { gcShowLeaderboards, isNative } from './native';
 import { sfx } from './sfx';
 
 export interface UICallbacks {
@@ -632,7 +633,7 @@ export class UI {
     const d = t();
     const save = this.save;
     const title = titleFor(save.lifetime.pulls);
-    const titleName = getLang() === 'zh' ? title.zh : title.en;
+    const titleName = pickLang(title.zh, title.en, title.zht);
     const nextIn = title.next !== null ? title.next - save.lifetime.pulls : null;
     const prog =
       title.next !== null
@@ -649,6 +650,7 @@ export class UI {
         <div class="tb-name">${titleName}</div>
         <div class="tb-bar"><div class="tb-fill" style="width:${prog}%"></div></div>
         ${nextIn !== null ? `<div class="tb-next">${d.nextTitleIn(nextIn)}</div>` : ''}
+        ${isNative() ? `<button class="btn ghost small" id="gc-btn" style="margin-top:8px">🏆 Game Center</button>` : ''}
       </div>
       <div class="stats-grid">
         <div class="sg"><b>${save.lifetime.pulls}</b><span>${d.statPulls}</span></div>
@@ -693,6 +695,11 @@ export class UI {
       </div>
     `;
     p.querySelector('#cl-close')!.addEventListener('click', () => this.closeOverlays());
+    p.querySelector('#gc-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sfx.click();
+      gcShowLeaderboards();
+    });
     this.els['ov-collection'].classList.add('on');
   }
 
